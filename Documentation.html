@@ -266,6 +266,10 @@ OLLAMA_IDEA_MODEL=llama3.1</code></pre>
           <p>
             The real <code>.env</code> file is ignored by Git. The safe template is <code>.env.example</code>.
           </p>
+          <p>
+            For Ollama, <code>llama3.1</code> gives stronger idea generation than smaller 3B models, but it can use
+            more laptop CPU, GPU, and RAM. The project does not cap Ollama context size, output length, or keep-alive settings.
+          </p>
         </div>
       </details>
 
@@ -777,9 +781,14 @@ PYTHONPATH=. python3 -m unittest discover -s tests</code></pre>
           <pre><code>python3 main.py ideas \
   --research workspace/agent_runs/20260623_051240_walnuts/research.json \
   --strategy workspace/agent_runs/20260623_051240_walnuts/strategy.json \
-  --ideas-per-run 5 \
+  --ideas-per-run 3 \
+  --max-candidates 5 \
   --provider ollama \
   --model llama3.1</code></pre>
+          <p>
+            Local Ollama runs can slow the computer if the model is large. Keep
+            <code>--ideas-per-run</code> and <code>--max-candidates</code> low if you want a lighter first test.
+          </p>
         </div>
       </details>
     </section>

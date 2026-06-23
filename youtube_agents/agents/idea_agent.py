@@ -115,6 +115,7 @@ class IdeaAgent:
                 "requested_provider": provider,
                 "used_provider": "template",
                 "model": response.get("model") or model,
+                "provider_settings": response.get("settings", {}),
                 "fallback_used": True,
                 "errors": [response.get("error", "Unknown LLM error.")],
             }
@@ -125,6 +126,7 @@ class IdeaAgent:
                 "requested_provider": provider,
                 "used_provider": "template",
                 "model": response.get("model") or model,
+                "provider_settings": response.get("settings", {}),
                 "fallback_used": True,
                 "errors": ["LLM response did not include valid idea candidates."],
             }
@@ -133,6 +135,7 @@ class IdeaAgent:
             "requested_provider": provider,
             "used_provider": provider,
             "model": response.get("model") or model,
+            "provider_settings": response.get("settings", {}),
             "fallback_used": False,
             "errors": [],
         }

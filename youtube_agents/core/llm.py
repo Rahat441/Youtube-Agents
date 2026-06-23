@@ -71,7 +71,7 @@ class OllamaChatClient:
         self,
         model: str | None = None,
         base_url: str | None = None,
-        timeout_seconds: int = 120,
+        timeout_seconds: int | None = None,
     ):
         load_dotenv()
         self.model = model or os.getenv("OLLAMA_IDEA_MODEL") or "llama3.1"
@@ -90,7 +90,6 @@ class OllamaChatClient:
             ],
             "format": "json",
             "stream": False,
-            "options": {"temperature": 0.8},
         }
         request = urllib.request.Request(
             f"{self.base_url}/api/chat",
@@ -99,12 +98,37 @@ class OllamaChatClient:
             method="POST",
         )
         try:
-            with urllib.request.urlopen(request, timeout=self.timeout_seconds) as response:
+            if self.timeout_seconds is None:
+                response_context = urllib.request.urlopen(request)
+            else:
+                response_context = urllib.request.urlopen(request, timeout=self.timeout_seconds)
+            with response_context as response:
                 data = json.loads(response.read().decode("utf-8"))
             content = data["message"]["content"]
-            return {"ok": True, "data": json.loads(content), "model": self.model}
+            return {
+                "ok": True,
+                "data": json.loads(content),
+                "model": self.model,
+                "settings": self._settings(),
+            }
         except urllib.error.HTTPError as error:
             body = error.read().decode("utf-8", errors="replace")
-            return {"ok": False, "error": f"HTTP {error.code}: {body}", "model": self.model}
+            return {
+                "ok": False,
+                "error": f"HTTP {error.code}: {body}",
+                "model": self.model,
+                "settings": self._settings(),
+            }
         except (urllib.error.URLError, TimeoutError, KeyError, json.JSONDecodeError) as error:
-            return {"ok": False, "error": str(error), "model": self.model}
+            return {
+                "ok": False,
+                "error": str(error),
+                "model": self.model,
+                "settings": self._settings(),
+            }
+
+    def _settings(self) -> dict[str, Any]:
+        return {
+            "base_url": self.base_url,
+            "timeout_seconds": self.timeout_seconds,
+        }

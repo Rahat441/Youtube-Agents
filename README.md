@@ -251,10 +251,13 @@ Ollama generation:
 python3 main.py ideas \
   --research workspace/agent_runs/YYYYMMDD_HHMMSS_topic/research.json \
   --strategy workspace/agent_runs/YYYYMMDD_HHMMSS_topic/strategy.json \
-  --ideas-per-run 5 \
+  --ideas-per-run 3 \
+  --max-candidates 5 \
   --provider ollama \
   --model llama3.1
 ```
+
+For local Ollama runs, `llama3.1` gives stronger idea generation than smaller 3B models, but it can use more laptop CPU/GPU and RAM. The project does not cap Ollama context size, output length, or keep-alive settings; Ollama uses the model's own defaults.
 
 Each idea includes:
 

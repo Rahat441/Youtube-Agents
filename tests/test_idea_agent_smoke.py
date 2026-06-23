@@ -1,6 +1,9 @@
+import os
 import unittest
+from unittest.mock import patch
 
 from youtube_agents.agents.idea_agent import IdeaAgent
+from youtube_agents.core.llm import OllamaChatClient
 
 
 class FakeLLMClient:
@@ -138,6 +141,17 @@ class IdeaAgentSmokeTest(unittest.TestCase):
 
         self.assertEqual(ideas["generation"]["used_provider"], "ollama")
         self.assertFalse(ideas["generation"]["fallback_used"])
+
+    def test_ollama_client_uses_uncapped_defaults(self):
+        keys = [
+            "OLLAMA_IDEA_MODEL",
+        ]
+        clean_env = {key: value for key, value in os.environ.items() if key not in keys}
+        with patch.dict(os.environ, clean_env, clear=True), patch("youtube_agents.core.llm.load_dotenv"):
+            client = OllamaChatClient()
+
+        self.assertEqual(client.model, "llama3.1")
+        self.assertIsNone(client.timeout_seconds)
 
 
 if __name__ == "__main__":

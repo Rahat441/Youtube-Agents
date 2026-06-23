@@ -149,7 +149,10 @@ python3 main.py ideas --research workspace/agent_runs/YYYYMMDD_HHMMSS_topic/rese
 
 IdeaAgent LLM mode
 python3 main.py ideas --research workspace/agent_runs/YYYYMMDD_HHMMSS_topic/research.json --strategy workspace/agent_runs/YYYYMMDD_HHMMSS_topic/strategy.json --ideas-per-run 5 --provider openai --model gpt-4o-mini
-python3 main.py ideas --research workspace/agent_runs/YYYYMMDD_HHMMSS_topic/research.json --strategy workspace/agent_runs/YYYYMMDD_HHMMSS_topic/strategy.json --ideas-per-run 5 --provider ollama --model llama3.1
+python3 main.py ideas --research workspace/agent_runs/YYYYMMDD_HHMMSS_topic/research.json --strategy workspace/agent_runs/YYYYMMDD_HHMMSS_topic/strategy.json --ideas-per-run 3 --max-candidates 5 --provider ollama --model llama3.1
+
+IdeaAgent Ollama model defaults
+Use llama3.1 for stronger local idea generation. The Ollama client does not cap context size, output length, or keep-alive settings; Ollama uses the model's own defaults.
 
 IdeaAgent provider rule
 The LLM only generates raw candidates. IdeaAgent still normalizes, scores, sorts, and writes the same ideas.json contract. If the LLM call fails or returns invalid JSON, it falls back to templates and records the error in generation.

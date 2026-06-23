@@ -39,7 +39,7 @@ ResearchAgent outputs
 - handoff_contract
 
 ResearchAgent CLI
-python3 main.py research --topic "walnuts" --audience "health curious adults" --style "documentary explainer" --source youtube --content-type scriptable
+python3 main.py research --topic "walnuts" --audience "health curious adults" --style "documentary explainer" --source youtube --content-type scriptable --language english
 
 YouTube API setup
 Paste the key into Youtube-Agents/.env:
@@ -66,6 +66,11 @@ ResearchAgent can filter YouTube evidence by duration:
 - midform: keep videos from 61 to 239 seconds
 - longform: keep videos at least 240 seconds
 - scriptable: keep videos at least 180 seconds
+
+Language
+ResearchAgent can filter YouTube evidence with:
+- auto: no language filter
+- english: reject titles that appear mostly non-English/non-Latin
 
 Smoke checks
 PYTHONPATH=. python3 -m unittest discover -s tests

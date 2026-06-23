@@ -309,6 +309,7 @@ class YouTubeDataSource:
         exclude_terms += self._manual_list(manual_brief, "hard_exclude_keywords")
         avoid_kids = manual_brief.get("avoid_kids_content", True)
         content_type = manual_brief.get("content_type", "both")
+        language = manual_brief.get("language", "auto")
 
         for video in videos:
             full_text = self._video_text(video)
@@ -322,6 +323,8 @@ class YouTubeDataSource:
                 rejected_reason = "missing manual include keyword"
             elif not self._content_type_allowed(video, content_type):
                 rejected_reason = f"video duration does not match content_type '{content_type}'"
+            elif language == "english" and self._non_latin_ratio(video.get("title", "")) > 0.35:
+                rejected_reason = "language filter is english but title appears mostly non-English"
             elif avoid_kids and video.get("made_for_kids"):
                 rejected_reason = "made for kids"
             elif any(marker in full_text for marker in self.NOISE_MARKERS):
@@ -364,6 +367,7 @@ class YouTubeDataSource:
             "rejected_videos": len(rejected),
             "rejected_examples": rejected[:10],
             "content_type": content_type,
+            "language": language,
         }
 
     def _content_type_allowed(self, video: dict[str, Any], content_type: str) -> bool:
@@ -447,6 +451,17 @@ class YouTubeDataSource:
         if duration_seconds <= self.MIDFORM_MAX_SECONDS:
             return "midform"
         return "longform"
+
+    def _non_latin_ratio(self, text: str) -> float:
+        letters = [char for char in text if char.isalpha()]
+        if not letters:
+            return 0
+        non_latin = [
+            char
+            for char in letters
+            if not ("a" <= char.lower() <= "z")
+        ]
+        return len(non_latin) / len(letters)
 
     def _age_days(self, published_at: str) -> int | None:
         if not published_at:

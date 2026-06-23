@@ -98,6 +98,41 @@ class ResearchAgentSmokeTest(unittest.TestCase):
         self.assertEqual(relevance_filter["content_type"], "scriptable")
         self.assertEqual(relevance_filter["rejected_videos"], 1)
 
+    def test_language_filter_rejects_non_english_titles(self):
+        source = YouTubeDataSource(api_key="fake-key")
+        videos = [
+            {
+                "video_id": "english1",
+                "title": "Walnuts Benefits Explained",
+                "description": "Walnuts nutrition facts.",
+                "tags": ["walnuts"],
+                "duration_seconds": 420,
+                "format_bucket": "longform",
+                "view_count": 1000,
+                "made_for_kids": False,
+            },
+            {
+                "video_id": "nonenglish1",
+                "title": "अखरोट खाने से क्या होता है?",
+                "description": "Walnuts nutrition facts.",
+                "tags": ["walnuts"],
+                "duration_seconds": 420,
+                "format_bucket": "longform",
+                "view_count": 1000,
+                "made_for_kids": False,
+            },
+        ]
+
+        kept, relevance_filter = source._filter_videos(
+            videos,
+            topic="walnuts",
+            manual_brief={"language": "english", "content_type": "both", "avoid_kids_content": True},
+        )
+
+        self.assertEqual([video["video_id"] for video in kept], ["english1"])
+        self.assertEqual(relevance_filter["language"], "english")
+        self.assertEqual(relevance_filter["rejected_videos"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

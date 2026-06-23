@@ -59,6 +59,7 @@ python3 main.py research \
   --audience "health curious adults" \
   --style "documentary explainer" \
   --content-type scriptable \
+  --language english \
   --source youtube \
   --youtube-max-results 10 \
   --youtube-max-queries 10 \
@@ -110,6 +111,14 @@ For script research, start with:
 
 ```bash
 python3 main.py research --topic "walnuts" --source youtube --content-type scriptable
+```
+
+Language:
+
+Use `--language english` to reject results whose titles appear mostly non-English/non-Latin:
+
+```bash
+python3 main.py research --topic "walnuts" --source youtube --language english
 ```
 
 Handoff to StrategyAgent:

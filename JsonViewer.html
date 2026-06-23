@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YouTube Agents JSON Viewer</title>
+  <style>
+    :root {
+      --bg: #f6f7f7;
+      --surface: #ffffff;
+      --ink: #202124;
+      --muted: #5f6368;
+      --line: #d9dddf;
+      --accent: #0f766e;
+      --accent-bg: #e6f4f1;
+      --warn: #9a5a00;
+      --warn-bg: #fff3d8;
+      --bad: #a52a2a;
+      --bad-bg: #ffe8e5;
+      --good: #146c43;
+      --good-bg: #e8f5ed;
+      --code: #f1f3f4;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.45;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+      padding: 22px 24px;
+    }
+
+    main {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 22px 18px 56px;
+    }
+
+    h1, h2, h3 {
+      line-height: 1.2;
+      margin: 0 0 10px;
+      letter-spacing: 0;
+    }
+
+    h1 { font-size: 28px; }
+    h2 { font-size: 20px; margin-top: 30px; }
+    h3 { font-size: 16px; margin-top: 22px; }
+
+    p { margin: 0 0 12px; color: var(--muted); }
+
+    code {
+      background: var(--code);
+      border-radius: 4px;
+      padding: 2px 5px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 0.92em;
+    }
+
+    pre {
+      margin: 0;
+      overflow: auto;
+      max-height: 520px;
+      background: #202124;
+      color: #f8f9fa;
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 13px;
+    }
+
+    .shell {
+      max-width: 1320px;
+      margin: 0 auto;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .file-control {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 14px;
+    }
+
+    .file-control label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    input[type="file"] {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px;
+      background: #fbfbfb;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 20px 0 8px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 8px;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--ink);
+      padding: 8px 11px;
+      font-weight: 650;
+      cursor: pointer;
+    }
+
+    button.active {
+      border-color: var(--accent);
+      background: var(--accent-bg);
+      color: var(--accent);
+    }
+
+    .section { display: none; }
+    .section.active { display: block; }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin: 14px 0 18px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 13px;
+      min-height: 78px;
+    }
+
+    .metric .label {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 5px;
+    }
+
+    .metric .value {
+      font-size: 23px;
+      font-weight: 750;
+      overflow-wrap: anywhere;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      font-size: 14px;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 9px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #eef1f2;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    .table-wrap {
+      overflow: auto;
+      max-height: 620px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+    }
+
+    .table-wrap table {
+      border: 0;
+      border-radius: 0;
+    }
+
+    .badge {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-weight: 700;
+      background: var(--code);
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .badge.good { background: var(--good-bg); color: var(--good); }
+    .badge.warn { background: var(--warn-bg); color: var(--warn); }
+    .badge.bad { background: var(--bad-bg); color: var(--bad); }
+    .badge.accent { background: var(--accent-bg); color: var(--accent); }
+
+    .notice {
+      border-left: 4px solid var(--accent);
+      background: var(--accent-bg);
+      padding: 12px 14px;
+      border-radius: 6px;
+      margin: 14px 0;
+    }
+
+    .notice.warn {
+      border-left-color: var(--warn);
+      background: var(--warn-bg);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .list {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+
+    .list ul { margin-top: 6px; }
+
+    details {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      margin: 10px 0;
+      overflow: hidden;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 700;
+      padding: 12px 14px;
+      background: #fbfbfb;
+    }
+
+    details[open] summary { border-bottom: 1px solid var(--line); }
+    .details-body { padding: 14px; }
+
+    @media (max-width: 880px) {
+      .toolbar, .metrics, .split { grid-template-columns: 1fr; }
+      header { padding: 18px 14px; }
+      main { padding: 16px 12px 42px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="shell">
+      <h1>YouTube Agents JSON Viewer</h1>
+      <p>Open <code>research.json</code> and <code>strategy.json</code> files locally, then inspect the data in organized tables and summaries.</p>
+      <div class="toolbar">
+        <div class="file-control">
+          <label for="researchFile">Research JSON</label>
+          <input id="researchFile" type="file" accept=".json,application/json">
+        </div>
+        <div class="file-control">
+          <label for="strategyFile">Strategy JSON</label>
+          <input id="strategyFile" type="file" accept=".json,application/json">
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="tabs" id="tabs">
+      <button class="active" data-tab="overview">Overview</button>
+      <button data-tab="research">Research</button>
+      <button data-tab="videos">Videos</button>
+      <button data-tab="strategy">Strategy</button>
+      <button data-tab="raw">Raw JSON</button>
+    </div>
+
+    <section class="section active" id="overview"></section>
+    <section class="section" id="research"></section>
+    <section class="section" id="videos"></section>
+    <section class="section" id="strategy"></section>
+    <section class="section" id="raw"></section>
+  </main>
+
+  <script>
+    let researchData = null;
+    let strategyData = null;
+    let researchName = "";
+    let strategyName = "";
+
+    const sections = {
+      overview: document.getElementById("overview"),
+      research: document.getElementById("research"),
+      videos: document.getElementById("videos"),
+      strategy: document.getElementById("strategy"),
+      raw: document.getElementById("raw")
+    };
+
+    document.getElementById("tabs").addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-tab]");
+      if (!button) return;
+      document.querySelectorAll(".tabs button").forEach(item => item.classList.remove("active"));
+      document.querySelectorAll(".section").forEach(item => item.classList.remove("active"));
+      button.classList.add("active");
+      sections[button.dataset.tab].classList.add("active");
+    });
+
+    document.getElementById("researchFile").addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      researchData = await readJsonFile(file);
+      researchName = file.name;
+      renderAll();
+    });
+
+    document.getElementById("strategyFile").addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      strategyData = await readJsonFile(file);
+      strategyName = file.name;
+      renderAll();
+    });
+
+    function readJsonFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            resolve(JSON.parse(reader.result));
+          } catch (error) {
+            alert(`Could not parse ${file.name}: ${error.message}`);
+            reject(error);
+          }
+        };
+        reader.onerror = () => reject(reader.error);
+        reader.readAsText(file);
+      });
+    }
+
+    function renderAll() {
+      renderOverview();
+      renderResearch();
+      renderVideos();
+      renderStrategy();
+      renderRaw();
+    }
+
+    function renderOverview() {
+      const topic = researchData?.input?.topic || strategyData?.input?.topic || "No file loaded";
+      const audience = researchData?.input?.audience || strategyData?.input?.audience || "";
+      const style = researchData?.input?.style || strategyData?.input?.style || "";
+      const market = researchData?.market_stats || {};
+      const confidence = strategyData?.confidence || {};
+
+      sections.overview.innerHTML = `
+        ${!researchData && !strategyData ? notice("Choose a research.json and/or strategy.json file above to start.", "warn") : ""}
+        <h2>Run Overview</h2>
+        <div class="metrics">
+          ${metric("Topic", escapeHtml(topic))}
+          ${metric("Videos", formatNumber(market.videos_collected || researchData?.competitor_videos?.length || 0))}
+          ${metric("Breakouts", formatNumber(market.breakout_count || researchData?.breakout_videos?.length || 0))}
+          ${metric("Strategy Confidence", confidence.level ? `${escapeHtml(confidence.level)} (${confidence.score})` : "Not loaded")}
+        </div>
+        <div class="split">
+          <div class="list">
+            <h3>Inputs</h3>
+            <p><strong>Audience:</strong> ${escapeHtml(audience || "Not loaded")}</p>
+            <p><strong>Style:</strong> ${escapeHtml(style || "Not loaded")}</p>
+            <p><strong>Research file:</strong> ${escapeHtml(researchName || "Not loaded")}</p>
+            <p><strong>Strategy file:</strong> ${escapeHtml(strategyName || "Not loaded")}</p>
+          </div>
+          <div class="list">
+            <h3>Recommendation</h3>
+            <p><strong>Lane:</strong> ${escapeHtml(strategyData?.recommended_niche_lane || "Not loaded")}</p>
+            <p><strong>Angle:</strong> ${escapeHtml(strategyData?.recommended_angle || "Not loaded")}</p>
+            <p><strong>Positioning:</strong> ${escapeHtml(strategyData?.positioning || "Not loaded")}</p>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderResearch() {
+      if (!researchData) {
+        sections.research.innerHTML = notice("Load a research.json file to inspect research evidence.", "warn");
+        return;
+      }
+      const market = researchData.market_stats || {};
+      const evidence = researchData.evidence_status || {};
+      const fit = market.competitor_fit_counts || {};
+      const format = market.format_counts || {};
+      sections.research.innerHTML = `
+        <h2>Research Summary</h2>
+        <div class="metrics">
+          ${metric("Live YouTube Data", evidence.has_live_youtube_data ? "Yes" : "No")}
+          ${metric("Kept Videos", formatNumber(market.videos_collected || 0))}
+          ${metric("Median Views/Day", formatNumber(market.median_views_per_day || 0))}
+          ${metric("Median Duration", `${formatNumber(market.median_duration_seconds || 0)}s`)}
+        </div>
+        <div class="split">
+          <div>
+            <h3>Fit Buckets</h3>
+            ${simpleTable(["Bucket", "Count"], [
+              ["Strong fit", fit.strong_fit || 0],
+              ["Adjacent opportunity", fit.adjacent_opportunity || 0],
+              ["Off-context outlier", fit.off_context_outlier || 0],
+              ["Weak fit", fit.weak_fit || 0],
+              ["Unscored", fit.unscored || 0]
+            ])}
+          </div>
+          <div>
+            <h3>Formats</h3>
+            ${simpleTable(["Format", "Count"], [
+              ["Shortform", format.shortform || 0],
+              ["Midform", format.midform || 0],
+              ["Longform", format.longform || 0],
+              ["Unknown", format.unknown || 0]
+            ])}
+          </div>
+        </div>
+        <h3>Query Plan</h3>
+        ${queryPlanTable(researchData.query_plan || [])}
+        <h3>Title Patterns</h3>
+        ${titlePatternsTable(researchData.title_patterns || [])}
+        <h3>Claims To Verify</h3>
+        ${claimsTable(researchData.claims_to_verify || [])}
+        <h3>Source Errors</h3>
+        ${(researchData.source_errors || []).length ? sourceErrorsTable(researchData.source_errors) : notice("No source errors recorded.")}
+      `;
+    }
+
+    function renderVideos() {
+      if (!researchData) {
+        sections.videos.innerHTML = notice("Load a research.json file to inspect videos.", "warn");
+        return;
+      }
+      sections.videos.innerHTML = `
+        <h2>Video Evidence</h2>
+        ${videoDetails("Strong Fit Competitors", researchData.strong_fit_competitors || [])}
+        ${videoDetails("Adjacent Opportunity Videos", researchData.adjacent_opportunity_videos || [])}
+        ${videoDetails("Off-Context Outliers", researchData.off_context_outliers || [])}
+        ${videoDetails("Breakout Videos", researchData.breakout_videos || [])}
+        ${videoDetails("All Competitor Videos", researchData.competitor_videos || [], false)}
+      `;
+    }
+
+    function renderStrategy() {
+      if (!strategyData) {
+        sections.strategy.innerHTML = notice("Load a strategy.json file to inspect strategic decisions.", "warn");
+        return;
+      }
+      const confidence = strategyData.confidence || {};
+      sections.strategy.innerHTML = `
+        <h2>Strategy Summary</h2>
+        <div class="metrics">
+          ${metric("Recommended Lane", escapeHtml(strategyData.recommended_niche_lane || ""))}
+          ${metric("Secondary Lane", escapeHtml(strategyData.secondary_niche_lane || ""))}
+          ${metric("Angle Type", escapeHtml(strategyData.recommended_angle_type || ""))}
+          ${metric("Confidence", `${escapeHtml(confidence.level || "")} ${confidence.score ?? ""}`)}
+        </div>
+        <div class="list">
+          <h3>Recommended Angle</h3>
+          <p><strong>${escapeHtml(strategyData.recommended_angle || "")}</strong></p>
+          <p>${escapeHtml(strategyData.positioning || "")}</p>
+        </div>
+        <h3>Lane Scores</h3>
+        ${laneScoresTable(strategyData.lane_scores || [])}
+        <h3>Key Evidence</h3>
+        ${keyEvidenceTable(strategyData.key_evidence || [])}
+        <h3>Angle Candidates</h3>
+        ${angleCandidatesTable(strategyData.angle_candidates || [])}
+        <h3>Confidence Reasons</h3>
+        ${listItems(confidence.reasons || [])}
+      `;
+    }
+
+    function renderRaw() {
+      sections.raw.innerHTML = `
+        <h2>Raw JSON</h2>
+        <details open>
+          <summary>research.json</summary>
+          <div class="details-body"><pre><code>${escapeHtml(researchData ? JSON.stringify(researchData, null, 2) : "Not loaded")}</code></pre></div>
+        </details>
+        <details>
+          <summary>strategy.json</summary>
+          <div class="details-body"><pre><code>${escapeHtml(strategyData ? JSON.stringify(strategyData, null, 2) : "Not loaded")}</code></pre></div>
+        </details>
+      `;
+    }
+
+    function videoDetails(title, videos, open = true) {
+      return `
+        <details ${open ? "open" : ""}>
+          <summary>${escapeHtml(title)} (${videos.length})</summary>
+          <div class="details-body">
+            ${videos.length ? videosTable(videos) : notice("No videos in this bucket.")}
+          </div>
+        </details>
+      `;
+    }
+
+    function videosTable(videos) {
+      const rows = videos.map(video => {
+        const fit = video.competitor_fit || {};
+        const url = video.url || (video.video_id ? `https://www.youtube.com/watch?v=${video.video_id}` : "");
+        return [
+          url ? `<a href="${escapeAttr(url)}" target="_blank" rel="noopener">${escapeHtml(video.title || "")}</a>` : escapeHtml(video.title || ""),
+          badge(fit.bucket || "unscored", bucketClass(fit.bucket)),
+          formatNumber(fit.score ?? ""),
+          escapeHtml(video.format_bucket || ""),
+          `${formatNumber(video.duration_seconds || 0)}s`,
+          formatNumber(video.view_count || 0),
+          formatNumber(video.views_per_day || 0),
+          formatNumber(video.outlier_ratio || 0),
+          video.is_breakout ? badge("yes", "good") : badge("no", ""),
+          escapeHtml((fit.reasons || []).join("; ")),
+          escapeHtml((fit.penalties || []).join("; "))
+        ];
+      });
+      return table([
+        "Title", "Fit", "Fit Score", "Format", "Duration", "Views", "Views/Day", "Outlier", "Breakout", "Fit Reasons", "Fit Penalties"
+      ], rows);
+    }
+
+    function queryPlanTable(items) {
+      return table(["Query", "Purpose"], items.map(item => [escapeHtml(item.query || ""), escapeHtml(item.purpose || "")]));
+    }
+
+    function titlePatternsTable(items) {
+      return table(["Pattern", "Count", "Examples"], items.map(item => [
+        escapeHtml(item.pattern || ""),
+        formatNumber(item.count || 0),
+        escapeHtml((item.examples || []).join(" | "))
+      ]));
+    }
+
+    function claimsTable(items) {
+      if (!items.length) return notice("No claims flagged.");
+      return table(["Claim Area", "Reason"], items.map(item => [escapeHtml(item.claim_area || ""), escapeHtml(item.reason || "")]));
+    }
+
+    function sourceErrorsTable(items) {
+      return table(["Source", "Error"], items.map(item => [escapeHtml(item.source || ""), escapeHtml(item.error || String(item))]));
+    }
+
+    function laneScoresTable(items) {
+      return table(["Lane", "Score", "Query", "Title", "Breakout", "Audience", "Risk", "Saturation", "Rationale"], items.map(item => {
+        const c = item.components || {};
+        return [
+          escapeHtml(item.lane || ""),
+          formatNumber(item.score || 0),
+          formatNumber(c.query_score || 0),
+          formatNumber(c.title_pattern_score || 0),
+          formatNumber(c.breakout_score || 0),
+          formatNumber(c.audience_fit_score || 0),
+          formatNumber(c.risk_fit_score || 0),
+          formatNumber(c.saturation_penalty || 0),
+          escapeHtml((item.rationale || []).join(" "))
+        ];
+      }));
+    }
+
+    function keyEvidenceTable(items) {
+      if (!items.length) return notice("No key evidence listed.");
+      return table(["Type", "Title/Pattern", "Metric", "Reason"], items.map(item => [
+        escapeHtml(item.type || ""),
+        escapeHtml(item.title || item.pattern || item.claim_area || ""),
+        escapeHtml(item.views_per_day ? `${formatNumber(item.views_per_day)} views/day` : item.count ? `${item.count} examples` : ""),
+        escapeHtml(item.reason || "")
+      ]));
+    }
+
+    function angleCandidatesTable(items) {
+      return table(["Angle", "Type", "Lane", "Positioning", "Why"], items.map(item => [
+        escapeHtml(item.angle || ""),
+        escapeHtml(item.angle_type || ""),
+        escapeHtml(item.lane || ""),
+        escapeHtml(item.positioning || ""),
+        escapeHtml(item.why_this_angle || "")
+      ]));
+    }
+
+    function simpleTable(headers, rows) {
+      return table(headers, rows.map(row => row.map(value => escapeHtml(String(value)))));
+    }
+
+    function table(headers, rows) {
+      return `
+        <div class="table-wrap">
+          <table>
+            <thead><tr>${headers.map(header => `<th>${escapeHtml(header)}</th>`).join("")}</tr></thead>
+            <tbody>
+              ${rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join("")}</tr>`).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function listItems(items) {
+      if (!items.length) return notice("No items.");
+      return `<div class="list"><ul>${items.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul></div>`;
+    }
+
+    function metric(label, value) {
+      return `
+        <div class="metric">
+          <div class="label">${escapeHtml(label)}</div>
+          <div class="value">${value}</div>
+        </div>
+      `;
+    }
+
+    function notice(text, type = "") {
+      return `<div class="notice ${type}">${escapeHtml(text)}</div>`;
+    }
+
+    function badge(text, cls = "") {
+      return `<span class="badge ${cls}">${escapeHtml(text)}</span>`;
+    }
+
+    function bucketClass(bucket) {
+      if (bucket === "strong_fit") return "good";
+      if (bucket === "adjacent_opportunity") return "accent";
+      if (bucket === "off_context_outlier") return "warn";
+      if (bucket === "weak_fit") return "bad";
+      return "";
+    }
+
+    function formatNumber(value) {
+      if (value === "" || value === null || value === undefined) return "";
+      const number = Number(value);
+      if (!Number.isFinite(number)) return escapeHtml(String(value));
+      if (Math.abs(number) >= 1000) return number.toLocaleString(undefined, { maximumFractionDigits: 1 });
+      if (!Number.isInteger(number)) return number.toLocaleString(undefined, { maximumFractionDigits: 2 });
+      return number.toLocaleString();
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function escapeAttr(value) {
+      return escapeHtml(value).replaceAll("`", "&#096;");
+    }
+
+    renderAll();
+  </script>
+</body>
+</html>

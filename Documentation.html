@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YouTube Agents Documentation</title>
+  <style>
+    :root {
+      --bg: #f7f7f5;
+      --paper: #ffffff;
+      --ink: #202124;
+      --muted: #5f6368;
+      --line: #d9d9d4;
+      --accent: #0f766e;
+      --accent-soft: #e4f4f1;
+      --code: #f1f3f4;
+      --warn: #8a4b00;
+      --warn-bg: #fff4df;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.55;
+    }
+
+    .shell {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 32px 20px 64px;
+    }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 24px;
+      margin-bottom: 28px;
+    }
+
+    h1, h2, h3 {
+      line-height: 1.2;
+      margin: 0 0 12px;
+    }
+
+    h1 { font-size: 36px; letter-spacing: 0; }
+    h2 { font-size: 24px; margin-top: 36px; }
+    h3 { font-size: 18px; margin-top: 24px; }
+
+    p { margin: 0 0 14px; }
+    ul, ol { margin-top: 8px; }
+
+    .subtitle {
+      max-width: 800px;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .status {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 10px;
+      background: var(--paper);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .panel {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+    }
+
+    .panel h3 { margin-top: 0; }
+
+    details {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      margin: 10px 0;
+      overflow: hidden;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 700;
+      padding: 13px 16px;
+      background: #fbfbfa;
+    }
+
+    details[open] summary {
+      border-bottom: 1px solid var(--line);
+    }
+
+    .details-body {
+      padding: 16px;
+    }
+
+    code {
+      background: var(--code);
+      border-radius: 4px;
+      padding: 2px 5px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 0.92em;
+    }
+
+    pre {
+      overflow-x: auto;
+      background: #202124;
+      color: #f8f9fa;
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 14px;
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 9px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f2f2ef;
+    }
+
+    .callout {
+      border-left: 4px solid var(--accent);
+      background: var(--accent-soft);
+      padding: 12px 14px;
+      border-radius: 6px;
+      margin: 14px 0;
+    }
+
+    .warning {
+      border-left-color: var(--warn);
+      background: var(--warn-bg);
+    }
+
+    .muted { color: var(--muted); }
+
+    .toc a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .toc a:hover { text-decoration: underline; }
+
+    @media (max-width: 760px) {
+      h1 { font-size: 30px; }
+      .grid { grid-template-columns: 1fr; }
+      .shell { padding: 22px 14px 48px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <h1>YouTube Agents Documentation</h1>
+      <p class="subtitle">
+        Local-first Python pipeline for turning a YouTube topic into structured project artifacts.
+        The system is being rebuilt one agent at a time, with each agent writing JSON that the next
+        agent can inspect and use.
+      </p>
+      <div class="status">
+        <span class="pill">Implemented: ResearchAgent v1</span>
+        <span class="pill">Implemented: StrategyAgent v1</span>
+        <span class="pill">Next: IdeaAgent</span>
+        <span class="pill">Local-first</span>
+        <span class="pill">YouTube Data API</span>
+      </div>
+    </header>
+
+    <section class="panel toc">
+      <h2>Contents</h2>
+      <ol>
+        <li><a href="#overview">Project Overview</a></li>
+        <li><a href="#setup">Setup</a></li>
+        <li><a href="#workflow">Current Workflow</a></li>
+        <li><a href="#research-agent">ResearchAgent</a></li>
+        <li><a href="#strategy-agent">StrategyAgent</a></li>
+        <li><a href="#schemas">Schemas And Files</a></li>
+        <li><a href="#testing">Testing</a></li>
+        <li><a href="#limitations">Current Limitations</a></li>
+        <li><a href="#future">Future Enhancements</a></li>
+      </ol>
+    </section>
+
+    <section id="overview">
+      <h2>Project Overview</h2>
+      <p>
+        The long-term pipeline is designed to move from raw topic to full YouTube video project:
+      </p>
+      <pre><code>ResearchAgent
+  -> StrategyAgent
+  -> IdeaAgent
+  -> OutlineAgent
+  -> ScriptAgent
+  -> CritiqueAgent
+  -> PackageAgent</code></pre>
+      <div class="grid">
+        <div class="panel">
+          <h3>ResearchAgent</h3>
+          <p>Collects and organizes YouTube evidence. It does not choose the final lane, angle, idea, or script.</p>
+        </div>
+        <div class="panel">
+          <h3>StrategyAgent</h3>
+          <p>Reads research evidence, scores niche lanes, chooses a recommended lane and angle, and writes strategy.</p>
+        </div>
+      </div>
+      <div class="callout">
+        <strong>Design rule:</strong> each agent should do one job and write a structured artifact. This keeps the
+        pipeline inspectable and makes it easier to improve one stage without rewriting the whole system.
+      </div>
+    </section>
+
+    <section id="setup">
+      <h2>Setup</h2>
+      <details open>
+        <summary>Environment</summary>
+        <div class="details-body">
+          <p>Put your YouTube Data API key in <code>.env</code>:</p>
+          <pre><code>YOUTUBE_API_KEY=your_key_here</code></pre>
+          <p>
+            The real <code>.env</code> file is ignored by Git. The safe template is <code>.env.example</code>.
+          </p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Project Commands</summary>
+        <div class="details-body">
+          <pre><code>cd /Users/rabat/Desktop/YoutubeAuto/Youtube-Agents
+
+python3 main.py research --help
+python3 main.py strategy --help
+
+PYTHONPATH=. python3 -m unittest discover -s tests</code></pre>
+        </div>
+      </details>
+    </section>
+
+    <section id="workflow">
+      <h2>Current Workflow</h2>
+      <details open>
+        <summary>Run ResearchAgent Then StrategyAgent</summary>
+        <div class="details-body">
+          <p>Step 1: collect YouTube evidence.</p>
+          <pre><code>python3 main.py research \
+  --topic "walnuts" \
+  --audience "health curious adults" \
+  --style "documentary explainer" \
+  --topic-context "nutrition health benefits eating walnuts science" \
+  --content-type scriptable \
+  --language english \
+  --source youtube \
+  --youtube-max-results 10 \
+  --youtube-max-queries 10 \
+  --youtube-comments-per-video 5</code></pre>
+
+          <p>Step 2: run strategy from the generated <code>research.json</code>.</p>
+          <pre><code>python3 main.py strategy \
+  --research workspace/agent_runs/YYYYMMDD_HHMMSS_topic/research.json</code></pre>
+
+          <p>Outputs are saved in the same run folder:</p>
+          <pre><code>workspace/agent_runs/YYYYMMDD_HHMMSS_topic/
+  research.json
+  strategy.json</code></pre>
+        </div>
+      </details>
+    </section>
+
+    <section id="research-agent">
+      <h2>ResearchAgent</h2>
+      <p>
+        ResearchAgent is the evidence collector. It builds YouTube queries, calls the YouTube Data API,
+        filters obvious bad matches, scores video performance, buckets competitor fit, extracts light
+        patterns, and writes <code>research.json</code>.
+      </p>
+
+      <details open>
+        <summary>Responsibility</summary>
+        <div class="details-body">
+          <ul>
+            <li>Collect clean YouTube/topic evidence.</li>
+            <li>Generate neutral discovery queries from templates.</li>
+            <li>Collect video, channel, metric, duration, tag, and comment evidence when available.</li>
+            <li>Filter by source, content type, language, manual keywords, and basic topic relevance.</li>
+            <li>Score performance signals such as <code>views_per_day</code>, <code>engagement_rate</code>, <code>outlier_ratio</code>, and <code>is_breakout</code>.</li>
+            <li>Bucket competitor fit without deleting creative outliers.</li>
+          </ul>
+          <p><strong>ResearchAgent must not decide:</strong> final niche lane, final angle, script premise, title, outline, or package.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Inputs</summary>
+        <div class="details-body">
+          <table>
+            <thead>
+              <tr><th>Input</th><th>Description</th><th>Example</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>topic</code></td><td>Main topic to research.</td><td><code>walnuts</code></td></tr>
+              <tr><td><code>audience</code></td><td>Target viewer group.</td><td><code>health curious adults</code></td></tr>
+              <tr><td><code>style</code></td><td>Desired video/channel style.</td><td><code>documentary explainer</code></td></tr>
+              <tr><td><code>manual_brief</code></td><td>Optional steering data from CLI flags or a JSON file.</td><td><code>topic_context</code>, include/exclude keywords</td></tr>
+              <tr><td><code>youtube_settings</code></td><td>API/source settings.</td><td><code>source=youtube</code>, <code>max_queries=10</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details>
+        <summary>CLI Arguments</summary>
+        <div class="details-body">
+          <table>
+            <thead>
+              <tr><th>Argument</th><th>Required</th><th>Default</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>--topic</code></td><td>Yes</td><td>none</td><td>Main topic or niche.</td></tr>
+              <tr><td><code>--audience</code></td><td>No</td><td><code>general viewers</code></td><td>Target audience.</td></tr>
+              <tr><td><code>--style</code></td><td>No</td><td><code>clear, evidence-led YouTube video</code></td><td>Intended style.</td></tr>
+              <tr><td><code>--manual-brief</code></td><td>No</td><td>none</td><td>Path to a JSON brief.</td></tr>
+              <tr><td><code>--topic-context</code></td><td>No</td><td>empty</td><td>Disambiguates broad topics.</td></tr>
+              <tr><td><code>--content-type</code></td><td>No</td><td><code>both</code></td><td>Filters duration: <code>both</code>, <code>shortform</code>, <code>midform</code>, <code>longform</code>, <code>scriptable</code>.</td></tr>
+              <tr><td><code>--language</code></td><td>No</td><td><code>auto</code></td><td><code>english</code> rejects titles that appear mostly non-English/non-Latin.</td></tr>
+              <tr><td><code>--include-keyword</code></td><td>No</td><td>none</td><td>Can be repeated. Results should include at least one include keyword.</td></tr>
+              <tr><td><code>--exclude-keyword</code></td><td>No</td><td>none</td><td>Can be repeated. Matching results are rejected.</td></tr>
+              <tr><td><code>--source</code></td><td>No</td><td><code>auto</code></td><td><code>auto</code>, <code>youtube</code>, or <code>offline</code>.</td></tr>
+              <tr><td><code>--youtube-max-results</code></td><td>No</td><td><code>8</code></td><td>Max search results per query/order.</td></tr>
+              <tr><td><code>--youtube-max-queries</code></td><td>No</td><td><code>10</code></td><td>Max query-plan items searched.</td></tr>
+              <tr><td><code>--youtube-comments-per-video</code></td><td>No</td><td><code>3</code></td><td>Comment samples per selected video.</td></tr>
+              <tr><td><code>--output-dir</code></td><td>No</td><td>auto run folder</td><td>Custom folder for <code>research.json</code>.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details>
+        <summary>Content Type Values</summary>
+        <div class="details-body">
+          <table>
+            <thead>
+              <tr><th>Value</th><th>Meaning</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>both</code></td><td>Keep all durations.</td></tr>
+              <tr><td><code>shortform</code></td><td>Keep videos up to 60 seconds.</td></tr>
+              <tr><td><code>midform</code></td><td>Keep videos from 61 to 239 seconds.</td></tr>
+              <tr><td><code>longform</code></td><td>Keep videos at least 240 seconds.</td></tr>
+              <tr><td><code>scriptable</code></td><td>Keep videos at least 180 seconds.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details>
+        <summary>How Query Planning Works</summary>
+        <div class="details-body">
+          <p>ResearchAgent uses deterministic templates instead of AI-generated searches. For <code>walnuts</code>, it can build:</p>
+          <ul>
+            <li><code>walnuts</code></li>
+            <li><code>walnuts explained</code></li>
+            <li><code>walnuts benefits</code></li>
+            <li><code>walnuts risks</code></li>
+            <li><code>walnuts mistakes</code></li>
+            <li><code>walnuts myths</code></li>
+            <li><code>walnuts what happens</code></li>
+            <li><code>walnuts science</code></li>
+            <li><code>walnuts beginner guide</code></li>
+            <li><code>walnuts side effects</code></li>
+            <li><code>what happens when you eat walnuts</code></li>
+            <li><code>walnuts nutrition facts</code></li>
+          </ul>
+          <p>It can also append audience, style, manual context, and include keywords. It avoids forced lane searches like <code>POV life as {topic}</code>.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>How YouTube Evidence Is Collected</summary>
+        <div class="details-body">
+          <ol>
+            <li><code>search.list</code> finds videos for each query.</li>
+            <li><code>videos.list</code> retrieves title, description, tags, duration, statistics, and status fields.</li>
+            <li><code>channels.list</code> retrieves channel and subscriber data.</li>
+            <li><code>commentThreads.list</code> samples comments when comments are available.</li>
+          </ol>
+          <p>Search uses relevance and view-count ordering for most queries. The main query also gets a date-order search to capture freshness.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>How Filtering And Scoring Works</summary>
+        <div class="details-body">
+          <p>ResearchAgent filters hard rejects first:</p>
+          <ul>
+            <li>manual exclude keyword matched</li>
+            <li>manual include keywords provided but missing</li>
+            <li>duration does not match <code>content_type</code></li>
+            <li><code>language=english</code> and title appears mostly non-English/non-Latin</li>
+            <li>made-for-kids when <code>avoid_kids_content</code> is true</li>
+            <li>basic topic relevance below threshold</li>
+          </ul>
+          <p>Then it calculates performance fields:</p>
+          <ul>
+            <li><code>views_per_day</code></li>
+            <li><code>engagement_rate</code></li>
+            <li><code>outlier_ratio = views / subscriber_count</code></li>
+            <li><code>is_breakout</code> when velocity or outlier ratio is strong</li>
+          </ul>
+        </div>
+      </details>
+
+      <details>
+        <summary>Competitor Fit Buckets</summary>
+        <div class="details-body">
+          <p>
+            Competitor fit is a soft scoring layer. It does not erase weird high performers by default.
+            It labels them so StrategyAgent can make cleaner decisions while IdeaAgent can still inspect
+            unusual inspiration later.
+          </p>
+          <table>
+            <thead>
+              <tr><th>Bucket</th><th>Purpose</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>strong_fit</code></td><td>Direct competitors matching topic, context, and format. Used first for strategy scoring.</td></tr>
+              <tr><td><code>adjacent_opportunity</code></td><td>Nearby videos that may inspire hooks, packaging, or sub-angles.</td></tr>
+              <tr><td><code>off_context_outlier</code></td><td>High-performing but clearly different-context videos. Useful for creative awareness, not core strategy.</td></tr>
+              <tr><td><code>weak_fit</code></td><td>Kept evidence with weak fit. Usually not important for strategy.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details>
+        <summary>Outputs</summary>
+        <div class="details-body">
+          <table>
+            <thead>
+              <tr><th>Field</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>query_plan</code></td><td>Generated searches and their purpose.</td></tr>
+              <tr><td><code>evidence_status</code></td><td>Whether live YouTube data was available and how much evidence was collected.</td></tr>
+              <tr><td><code>market_stats</code></td><td>Aggregate views, duration, breakout counts, format counts, and competitor-fit counts.</td></tr>
+              <tr><td><code>competitor_videos</code></td><td>Full kept competitor evidence.</td></tr>
+              <tr><td><code>strong_fit_competitors</code></td><td>Direct competitors for strategy decisions.</td></tr>
+              <tr><td><code>adjacent_opportunity_videos</code></td><td>Nearby videos for creative inspiration.</td></tr>
+              <tr><td><code>off_context_outliers</code></td><td>High-performing off-context videos.</td></tr>
+              <tr><td><code>breakout_videos</code></td><td>Videos with strong view velocity or outlier ratio.</td></tr>
+              <tr><td><code>title_patterns</code></td><td>Repeated title formats detected from the evidence.</td></tr>
+              <tr><td><code>viewer_pains</code></td><td>Questions/confusion extracted from sampled comments.</td></tr>
+              <tr><td><code>claims_to_verify</code></td><td>Health, finance, legal, or other risky claim areas to fact-check later.</td></tr>
+              <tr><td><code>source_errors</code></td><td>Non-fatal source/API/comment errors.</td></tr>
+              <tr><td><code>handoff_contract</code></td><td>What StrategyAgent should do next.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details>
+        <summary>Examples</summary>
+        <div class="details-body">
+          <p>Scriptable English health research:</p>
+          <pre><code>python3 main.py research \
+  --topic "walnuts" \
+  --audience "health curious adults" \
+  --style "documentary explainer" \
+  --topic-context "nutrition health benefits eating walnuts science" \
+  --content-type scriptable \
+  --language english \
+  --source youtube \
+  --youtube-max-results 10 \
+  --youtube-max-queries 10 \
+  --youtube-comments-per-video 5</code></pre>
+
+          <p>Offline shape check without YouTube API:</p>
+          <pre><code>python3 main.py research \
+  --topic "walnuts" \
+  --source offline</code></pre>
+
+          <p>Ambiguous topic steering:</p>
+          <pre><code>python3 main.py research \
+  --topic "apples" \
+  --topic-context "fruit nutrition, not Apple technology" \
+  --exclude-keyword "iphone" \
+  --exclude-keyword "macbook" \
+  --content-type scriptable \
+  --language english \
+  --source youtube</code></pre>
+        </div>
+      </details>
+    </section>
+
+    <section id="strategy-agent">
+      <h2>StrategyAgent</h2>
+      <p>
+        StrategyAgent reads <code>research.json</code>, interprets the evidence, scores possible niche lanes,
+        chooses a recommended lane and angle, and writes <code>strategy.json</code>.
+      </p>
+
+      <details open>
+        <summary>Responsibility</summary>
+        <div class="details-body">
+          <ul>
+            <li>Read ResearchAgent output.</li>
+            <li>Prefer <code>strong_fit_competitors</code> for scoring when available.</li>
+            <li>Score niche lanes from query matches, title patterns, breakout videos, audience fit, claim risk, and saturation.</li>
+            <li>Choose a recommended niche lane and secondary niche lane.</li>
+            <li>Choose a recommended angle, angle type, positioning, confidence, and key evidence.</li>
+          </ul>
+          <p><strong>StrategyAgent must not decide:</strong> final title, full outline, script, thumbnail package, or final video package.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Inputs</summary>
+        <div class="details-body">
+          <table>
+            <thead>
+              <tr><th>Input</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>research.json</code></td><td>The structured artifact generated by ResearchAgent.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details>
+        <summary>CLI Arguments</summary>
+        <div class="details-body">
+          <table>
+            <thead>
+              <tr><th>Argument</th><th>Required</th><th>Default</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>--research</code></td><td>Yes</td><td>none</td><td>Path to <code>research.json</code>.</td></tr>
+              <tr><td><code>--output-dir</code></td><td>No</td><td>same folder as research</td><td>Custom folder for <code>strategy.json</code>.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details>
+        <summary>Niche Lanes</summary>
+        <div class="details-body">
+          <table>
+            <thead>
+              <tr><th>Lane</th><th>Meaning</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>education</code></td><td>Evidence-led explanations, science, health, benefits, risks, and myths.</td></tr>
+              <tr><td><code>goal_instruction</code></td><td>Practical guidance, mistakes, steps, tips, and how-to framing.</td></tr>
+              <tr><td><code>review_comparison</code></td><td>Comparisons, reviews, alternatives, worth-it questions.</td></tr>
+              <tr><td><code>random_curiosity</code></td><td>Surprising, weird, myth, hidden-truth, or curiosity-led framing.</td></tr>
+              <tr><td><code>pov_life_as</code></td><td>POV/story/simulation style content.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details>
+        <summary>How Lane Scoring Works</summary>
+        <div class="details-body">
+          <p>Each lane receives component scores:</p>
+          <table>
+            <thead>
+              <tr><th>Component</th><th>Meaning</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>query_score</code></td><td>Whether videos matched query purposes relevant to the lane.</td></tr>
+              <tr><td><code>title_pattern_score</code></td><td>Whether common title patterns fit the lane.</td></tr>
+              <tr><td><code>breakout_score</code></td><td>Whether breakout videos use lane-relevant keywords.</td></tr>
+              <tr><td><code>audience_fit_score</code></td><td>Whether audience, style, and manual context fit the lane.</td></tr>
+              <tr><td><code>risk_fit_score</code></td><td>Whether the lane responsibly fits risky claims such as health or finance.</td></tr>
+              <tr><td><code>saturation_penalty</code></td><td>Penalty when a lane appears common enough to require differentiation.</td></tr>
+            </tbody>
+          </table>
+          <p>
+            If <code>strong_fit_competitors</code> exists, StrategyAgent uses that bucket for core scoring.
+            If not, it falls back to <code>competitor_videos</code> for backward compatibility.
+          </p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Outputs</summary>
+        <div class="details-body">
+          <table>
+            <thead>
+              <tr><th>Field</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>evidence_summary</code></td><td>Compact summary of the research evidence.</td></tr>
+              <tr><td><code>recommended_niche_lane</code></td><td>Highest-scoring strategic lane.</td></tr>
+              <tr><td><code>recommended_niche_label</code></td><td>Human-readable lane name.</td></tr>
+              <tr><td><code>recommended_angle</code></td><td>Main angle recommendation.</td></tr>
+              <tr><td><code>recommended_angle_type</code></td><td>Angle category such as <code>claims_vs_truth</code> or <code>mistakes_to_avoid</code>.</td></tr>
+              <tr><td><code>positioning</code></td><td>How the angle should be framed.</td></tr>
+              <tr><td><code>confidence</code></td><td>Confidence level, numeric score, lane-score gap, and reasons.</td></tr>
+              <tr><td><code>key_evidence</code></td><td>Specific videos, patterns, and claim risks that influenced the recommendation.</td></tr>
+              <tr><td><code>secondary_niche_lane</code></td><td>Runner-up lane.</td></tr>
+              <tr><td><code>lane_scores</code></td><td>Full lane scores and component breakdowns.</td></tr>
+              <tr><td><code>angle_candidates</code></td><td>Primary and secondary angle options.</td></tr>
+              <tr><td><code>strategy_notes</code></td><td>Brief explanation of the strategic read.</td></tr>
+              <tr><td><code>handoff_contract</code></td><td>What IdeaAgent should use next.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details>
+        <summary>Examples</summary>
+        <div class="details-body">
+          <p>Run strategy on the latest research file:</p>
+          <pre><code>python3 main.py strategy \
+  --research workspace/agent_runs/20260623_051240_walnuts/research.json</code></pre>
+
+          <p>Write strategy to a custom folder:</p>
+          <pre><code>python3 main.py strategy \
+  --research workspace/agent_runs/20260623_051240_walnuts/research.json \
+  --output-dir /private/tmp/youtube-strategy-check</code></pre>
+        </div>
+      </details>
+    </section>
+
+    <section id="schemas">
+      <h2>Schemas And Files</h2>
+      <details>
+        <summary>Important Files</summary>
+        <div class="details-body">
+          <table>
+            <thead>
+              <tr><th>Path</th><th>Purpose</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>main.py</code></td><td>CLI entry point.</td></tr>
+              <tr><td><code>youtube_agents/agents/research_agent.py</code></td><td>ResearchAgent implementation.</td></tr>
+              <tr><td><code>youtube_agents/sources/youtube_source.py</code></td><td>YouTube Data API collection and filtering.</td></tr>
+              <tr><td><code>youtube_agents/agents/strategy_agent.py</code></td><td>StrategyAgent implementation.</td></tr>
+              <tr><td><code>schemas/research.schema.json</code></td><td>ResearchAgent output contract.</td></tr>
+              <tr><td><code>schemas/strategy.schema.json</code></td><td>StrategyAgent output contract.</td></tr>
+              <tr><td><code>tests/</code></td><td>Smoke tests for key behavior.</td></tr>
+              <tr><td><code>workspace/agent_runs/</code></td><td>Generated run artifacts. Ignored by Git.</td></tr>
+              <tr><td><code>.env</code></td><td>Local secrets. Ignored by Git.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </section>
+
+    <section id="testing">
+      <h2>Testing</h2>
+      <details open>
+        <summary>Smoke Tests</summary>
+        <div class="details-body">
+          <p>Run all smoke tests:</p>
+          <pre><code>PYTHONPATH=. python3 -m unittest discover -s tests</code></pre>
+          <p>The tests currently check:</p>
+          <ul>
+            <li>ResearchAgent output shape with a fake YouTube source.</li>
+            <li>Content-type filtering.</li>
+            <li>English language filtering.</li>
+            <li>Competitor-fit bucketing.</li>
+            <li>StrategyAgent lane selection from fake health research.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details>
+        <summary>Compile Check</summary>
+        <div class="details-body">
+          <pre><code>python3 -m py_compile \
+  main.py \
+  youtube_agents/agents/research_agent.py \
+  youtube_agents/agents/strategy_agent.py \
+  youtube_agents/sources/youtube_source.py</code></pre>
+        </div>
+      </details>
+    </section>
+
+    <section id="limitations">
+      <h2>Current Limitations</h2>
+      <details open>
+        <summary>Research Limitations</summary>
+        <div class="details-body">
+          <ul>
+            <li>The YouTube Data API can return odd matches for ambiguous topics.</li>
+            <li>Competitor-fit scoring is heuristic and may mis-bucket some videos.</li>
+            <li>Comment collection can fail when comments are disabled or quota/API permissions prevent access.</li>
+            <li>The language filter is a simple non-Latin ratio check, not full language detection.</li>
+            <li>Offline mode writes a valid artifact shell but does not invent stats.</li>
+            <li>No API response cache exists yet, so repeated research can spend quota.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details>
+        <summary>Strategy Limitations</summary>
+        <div class="details-body">
+          <ul>
+            <li>Lane scoring is deterministic and heuristic, not an LLM reasoning pass.</li>
+            <li>Saturation penalty is still simple.</li>
+            <li>StrategyAgent can only score the lanes currently encoded in the code.</li>
+            <li>StrategyAgent does not yet write a human-readable markdown report.</li>
+            <li>It does not validate JSON schemas at runtime.</li>
+          </ul>
+        </div>
+      </details>
+    </section>
+
+    <section id="future">
+      <h2>Future Enhancements To Consider</h2>
+      <details open>
+        <summary>Near-Term</summary>
+        <div class="details-body">
+          <ul>
+            <li>Add YouTube API response caching to save quota.</li>
+            <li>Add a schema validation command for <code>research.json</code> and <code>strategy.json</code>.</li>
+            <li>Add a markdown summary output for StrategyAgent.</li>
+            <li>Improve competitor-fit scoring with more context-specific markers and better negative signals.</li>
+            <li>Add a command that runs ResearchAgent then StrategyAgent in one workflow.</li>
+            <li>Commit the current StrategyAgent and competitor-fit changes once reviewed.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details>
+        <summary>Next Agents</summary>
+        <div class="details-body">
+          <table>
+            <thead>
+              <tr><th>Agent</th><th>Future Responsibility</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>IdeaAgent</code></td><td>Generate candidate video ideas from <code>strategy.json</code>.</td></tr>
+              <tr><td><code>OutlineAgent</code></td><td>Build retention structure, sections, beats, and evidence placement.</td></tr>
+              <tr><td><code>ScriptAgent</code></td><td>Draft the voiceover script from the outline.</td></tr>
+              <tr><td><code>CritiqueAgent</code></td><td>Score and critique the script for clarity, retention, claims, and pacing.</td></tr>
+              <tr><td><code>PackageAgent</code></td><td>Save final project artifacts, docs, metadata, and packaging recommendations.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details>
+        <summary>Longer-Term Ideas</summary>
+        <div class="details-body">
+          <ul>
+            <li>Add manual-evidence import for videos you paste in yourself.</li>
+            <li>Add transcript collection when possible.</li>
+            <li>Add better language detection.</li>
+            <li>Add separate Shorts packaging analysis while keeping scriptable competitors clean.</li>
+            <li>Add source credibility scoring for health, finance, and legal topics.</li>
+            <li>Add configurable lane definitions instead of hardcoded lane maps.</li>
+          </ul>
+        </div>
+      </details>
+    </section>
+  </main>
+</body>
+</html>

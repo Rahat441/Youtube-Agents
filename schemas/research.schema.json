@@ -12,6 +12,9 @@
     "evidence_status",
     "market_stats",
     "competitor_videos",
+    "strong_fit_competitors",
+    "adjacent_opportunity_videos",
+    "off_context_outliers",
     "breakout_videos",
     "title_patterns",
     "viewer_pains",
@@ -48,6 +51,9 @@
     "evidence_status": { "type": "object" },
     "market_stats": { "type": "object" },
     "competitor_videos": { "type": "array" },
+    "strong_fit_competitors": { "type": "array" },
+    "adjacent_opportunity_videos": { "type": "array" },
+    "off_context_outliers": { "type": "array" },
     "breakout_videos": { "type": "array" },
     "title_patterns": { "type": "array" },
     "viewer_pains": { "type": "array" },
@@ -56,4 +62,3 @@
     "handoff_contract": { "type": "object" }
   }
 }
-

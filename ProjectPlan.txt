@@ -13,7 +13,7 @@ Target pipeline
 7. PackageAgent
 
 Current scope
-ResearchAgent v1 only.
+ResearchAgent v1 and StrategyAgent v1.
 
 ResearchAgent responsibility
 Collect clean topic and YouTube evidence. It must not decide the final niche lane, recommended angle, premise, or script direction.
@@ -31,6 +31,9 @@ ResearchAgent outputs
 - evidence_status
 - market_stats
 - competitor_videos
+- strong_fit_competitors
+- adjacent_opportunity_videos
+- off_context_outliers
 - breakout_videos
 - title_patterns
 - viewer_pains
@@ -78,3 +81,49 @@ python3 main.py research --topic "walnuts" --source offline
 
 StrategyAgent handoff
 StrategyAgent will later read research.json, choose a recommended niche lane and angle, explain rationale, and produce strategy.json.
+
+StrategyAgent responsibility
+Read research.json and make sense of the evidence. It chooses the recommended niche lane and angle, explains its rationale, and produces strategy.json.
+
+StrategyAgent inputs
+- research.json
+
+StrategyAgent outputs
+- strategy.json
+- evidence_summary
+- recommended_niche_lane
+- recommended_angle
+- recommended_angle_type
+- positioning
+- confidence
+- key_evidence
+- secondary_niche_lane
+- lane_scores
+- angle_candidates
+- strategy_notes
+- handoff_contract
+
+StrategyAgent lanes
+- education
+- goal_instruction
+- review_comparison
+- random_curiosity
+- pov_life_as
+
+StrategyAgent CLI
+python3 main.py strategy --research workspace/agent_runs/YYYYMMDD_HHMMSS_topic/research.json
+
+StrategyAgent scoring signals
+- query matches from competitor videos
+- strong_fit_competitors when available
+- title patterns
+- breakout videos
+- audience/style/manual context
+- claims_to_verify
+- saturation penalties
+
+StrategyAgent handoff
+IdeaAgent will later read strategy.json and generate candidate video ideas. StrategyAgent must not decide the final title, full outline, script, or thumbnail package.
+
+Competitor fit rule
+ResearchAgent should score and bucket competitor fit rather than hard-delete weird outliers. Strong-fit videos should drive strategy. Adjacent opportunities and off-context outliers should remain available for creative inspiration.

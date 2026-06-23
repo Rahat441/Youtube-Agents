@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.youtube-agents/schemas/strategy.schema.json",
+  "title": "StrategyAgent v1 output",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "agent",
+    "created_at",
+    "input",
+    "evidence_summary",
+    "recommended_niche_lane",
+    "recommended_niche_label",
+    "recommended_angle",
+    "recommended_angle_type",
+    "positioning",
+    "confidence",
+    "key_evidence",
+    "secondary_niche_lane",
+    "lane_scores",
+    "angle_candidates",
+    "strategy_notes",
+    "handoff_contract"
+  ],
+  "properties": {
+    "schema_version": { "const": "strategy.v1" },
+    "agent": { "const": "StrategyAgent" },
+    "created_at": { "type": "string" },
+    "input": { "type": "object" },
+    "evidence_summary": { "type": "object" },
+    "recommended_niche_lane": { "type": "string" },
+    "recommended_niche_label": { "type": "string" },
+    "recommended_angle": { "type": "string" },
+    "recommended_angle_type": { "type": "string" },
+    "positioning": { "type": "string" },
+    "confidence": {
+      "type": "object",
+      "required": ["level", "score", "top_lane_score", "second_lane_score", "score_gap", "reasons"],
+      "properties": {
+        "level": { "type": "string" },
+        "score": { "type": "number" },
+        "top_lane_score": { "type": "number" },
+        "second_lane_score": { "type": "number" },
+        "score_gap": { "type": "number" },
+        "reasons": { "type": "array" }
+      }
+    },
+    "key_evidence": { "type": "array" },
+    "secondary_niche_lane": { "type": ["string", "null"] },
+    "lane_scores": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["lane", "label", "score", "components", "rationale", "evidence"],
+        "properties": {
+          "lane": { "type": "string" },
+          "label": { "type": "string" },
+          "score": { "type": "number" },
+          "components": { "type": "object" },
+          "rationale": { "type": "array" },
+          "evidence": { "type": "array" }
+        }
+      }
+    },
+    "angle_candidates": { "type": "array" },
+    "strategy_notes": { "type": "array" },
+    "handoff_contract": { "type": "object" }
+  }
+}

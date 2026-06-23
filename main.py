@@ -11,6 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from youtube_agents.agents.research_agent import ResearchAgent
+from youtube_agents.agents.strategy_agent import StrategyAgent
 from youtube_agents.core.paths import project_root, read_json, slugify, timestamp, write_json
 from youtube_agents.sources.youtube_source import YouTubeDataSource
 
@@ -44,6 +45,10 @@ def build_parser() -> argparse.ArgumentParser:
     research.add_argument("--youtube-max-queries", type=int, default=10, help="Max query-plan items to search")
     research.add_argument("--youtube-comments-per-video", type=int, default=3, help="Comments to sample per selected video")
     research.add_argument("--output-dir", default=None, help="Optional output directory for research.json")
+
+    strategy = subparsers.add_parser("strategy", help="Run StrategyAgent from a research.json file")
+    strategy.add_argument("--research", required=True, help="Path to research.json")
+    strategy.add_argument("--output-dir", default=None, help="Optional output directory for strategy.json")
     return parser
 
 
@@ -52,6 +57,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.command == "research":
         return run_research(args)
+    if args.command == "strategy":
+        return run_strategy(args)
     parser.error(f"Unknown command: {args.command}")
     return 2
 
@@ -111,6 +118,27 @@ def run_research(args: argparse.Namespace) -> int:
 
 def default_run_dir(topic: str) -> Path:
     return project_root() / "workspace" / "agent_runs" / f"{timestamp()}_{slugify(topic)}"
+
+
+def run_strategy(args: argparse.Namespace) -> int:
+    research_path = Path(args.research)
+    research = read_json(research_path)
+    strategy = StrategyAgent().run(research)
+    output_dir = Path(args.output_dir) if args.output_dir else research_path.parent
+    output_path = output_dir / "strategy.json"
+    write_json(output_path, strategy)
+    print(
+        json.dumps(
+            {
+                "ok": True,
+                "strategy_path": str(output_path),
+                "recommended_niche_lane": strategy["recommended_niche_lane"],
+                "recommended_angle": strategy["recommended_angle"],
+            },
+            indent=2,
+        )
+    )
+    return 0
 
 
 if __name__ == "__main__":

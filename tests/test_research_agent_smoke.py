@@ -31,6 +31,12 @@ class FakeYouTubeSource:
                     "subscriber_count": 100000,
                     "outlier_ratio": 2.5,
                     "is_breakout": True,
+                    "competitor_fit": {
+                        "score": 82,
+                        "bucket": "strong_fit",
+                        "reasons": ["matches intended context terms: nutrition"],
+                        "penalties": [],
+                    },
                     "query_matches": [{"query": query_plan[0]["query"], "purpose": query_plan[0]["purpose"]}],
                     "comments": [
                         {"text": "How do I know how many walnuts are too many?", "like_count": 12}
@@ -55,6 +61,7 @@ class ResearchAgentSmokeTest(unittest.TestCase):
         self.assertEqual(result["agent"], "ResearchAgent")
         self.assertTrue(result["evidence_status"]["has_live_youtube_data"])
         self.assertEqual(result["market_stats"]["videos_collected"], 1)
+        self.assertEqual(len(result["strong_fit_competitors"]), 1)
         self.assertEqual(result["breakout_videos"][0]["video_id"], "abc123")
         self.assertTrue(result["viewer_pains"])
         self.assertEqual(result["handoff_contract"]["next_agent"], "StrategyAgent")
@@ -132,6 +139,45 @@ class ResearchAgentSmokeTest(unittest.TestCase):
         self.assertEqual([video["video_id"] for video in kept], ["english1"])
         self.assertEqual(relevance_filter["language"], "english")
         self.assertEqual(relevance_filter["rejected_videos"], 1)
+
+    def test_competitor_fit_preserves_off_context_outliers(self):
+        source = YouTubeDataSource(api_key="fake-key")
+        health_video = {
+            "video_id": "health1",
+            "title": "What Happens When You Eat Walnuts Every Day",
+            "description": "Walnuts nutrition science and health benefits.",
+            "tags": ["walnuts", "nutrition"],
+            "view_count": 100000,
+            "subscriber_count": 20000,
+            "views_per_day": 800,
+            "query_matches": [{"purpose": "nutrition evidence"}],
+            "relevance": {"score": 65},
+        }
+        off_context_video = {
+            "video_id": "game1",
+            "title": "All 130 Golden Walnuts - Stardew Valley Guide",
+            "description": "Gaming guide for golden walnuts.",
+            "tags": ["stardew"],
+            "view_count": 300000,
+            "subscriber_count": 20000,
+            "views_per_day": 1500,
+            "query_matches": [{"purpose": "beginner search demand"}],
+            "relevance": {"score": 40},
+        }
+
+        health_video = source._score_competitor_fit(
+            source._score_video(health_video),
+            topic="walnuts",
+            manual_brief={"topic_context": "nutrition health benefits eating walnuts science"},
+        )
+        off_context_video = source._score_competitor_fit(
+            source._score_video(off_context_video),
+            topic="walnuts",
+            manual_brief={"topic_context": "nutrition health benefits eating walnuts science"},
+        )
+
+        self.assertEqual(health_video["competitor_fit"]["bucket"], "strong_fit")
+        self.assertEqual(off_context_video["competitor_fit"]["bucket"], "off_context_outlier")
 
 
 if __name__ == "__main__":

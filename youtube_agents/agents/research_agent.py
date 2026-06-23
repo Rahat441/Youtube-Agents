@@ -122,6 +122,9 @@ class ResearchAgent:
             source_errors.append({"source": "youtube", "error": "YouTube source skipped because no API key is available."})
 
         competitor_videos = self._competitor_videos(videos)
+        strong_fit_competitors = self._bucketed_videos(competitor_videos, "strong_fit")
+        adjacent_opportunity_videos = self._bucketed_videos(competitor_videos, "adjacent_opportunity")
+        off_context_outliers = self._bucketed_videos(competitor_videos, "off_context_outlier")
         breakout_videos = [video for video in competitor_videos if video.get("is_breakout")]
         title_patterns = self._title_patterns(competitor_videos)
         viewer_pains = self._viewer_pains(competitor_videos)
@@ -146,6 +149,9 @@ class ResearchAgent:
             },
             "market_stats": self._market_stats(competitor_videos, relevance_filter),
             "competitor_videos": competitor_videos,
+            "strong_fit_competitors": strong_fit_competitors,
+            "adjacent_opportunity_videos": adjacent_opportunity_videos,
+            "off_context_outliers": off_context_outliers,
             "breakout_videos": breakout_videos[:10],
             "title_patterns": title_patterns,
             "viewer_pains": viewer_pains,
@@ -267,8 +273,16 @@ class ResearchAgent:
             "query_matches",
             "relevance",
             "comments",
+            "competitor_fit",
         ]
         return [{field: video.get(field) for field in fields if field in video} for video in videos]
+
+    def _bucketed_videos(self, videos: list[dict[str, Any]], bucket: str) -> list[dict[str, Any]]:
+        return [
+            video
+            for video in videos
+            if video.get("competitor_fit", {}).get("bucket") == bucket
+        ]
 
     def _market_stats(self, videos: list[dict[str, Any]], relevance_filter: dict[str, Any]) -> dict[str, Any]:
         views = [int(video.get("view_count") or 0) for video in videos]
@@ -281,6 +295,7 @@ class ResearchAgent:
             "median_views_per_day": self._median(views_per_day),
             "median_duration_seconds": self._median(durations),
             "format_counts": self._format_counts(videos),
+            "competitor_fit_counts": self._competitor_fit_counts(videos),
             "breakout_count": sum(1 for video in videos if video.get("is_breakout")),
             "relevance_filter": relevance_filter,
         }
@@ -292,6 +307,19 @@ class ResearchAgent:
             "midform": counts.get("midform", 0),
             "longform": counts.get("longform", 0),
             "unknown": counts.get("unknown", 0),
+        }
+
+    def _competitor_fit_counts(self, videos: list[dict[str, Any]]) -> dict[str, int]:
+        counts: Counter[str] = Counter(
+            video.get("competitor_fit", {}).get("bucket", "unscored")
+            for video in videos
+        )
+        return {
+            "strong_fit": counts.get("strong_fit", 0),
+            "adjacent_opportunity": counts.get("adjacent_opportunity", 0),
+            "off_context_outlier": counts.get("off_context_outlier", 0),
+            "weak_fit": counts.get("weak_fit", 0),
+            "unscored": counts.get("unscored", 0),
         }
 
     def _title_patterns(self, videos: list[dict[str, Any]]) -> list[dict[str, Any]]:

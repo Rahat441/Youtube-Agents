@@ -43,6 +43,62 @@ class YouTubeDataSource:
         "toy",
         "toys",
     }
+    CONTEXT_FIT_MARKERS = {
+        "health": {
+            "arteries",
+            "benefit",
+            "benefits",
+            "body",
+            "cholesterol",
+            "diabetes",
+            "diet",
+            "eat",
+            "eating",
+            "fiber",
+            "health",
+            "heart",
+            "inflammation",
+            "nutrition",
+            "nutrient",
+            "omega",
+            "protein",
+            "science",
+            "senior",
+            "seniors",
+            "vitamin",
+        },
+        "money": {"business", "cash", "finance", "income", "invest", "money", "profit", "revenue"},
+        "tech": {"ai", "app", "device", "review", "software", "tech", "tool", "tutorial"},
+    }
+    OFF_CONTEXT_MARKERS = {
+        "air fryer",
+        "asmr",
+        "epoxy",
+        "family guy",
+        "furniture",
+        "game",
+        "gaming",
+        "harvest",
+        "harvesting",
+        "minecraft",
+        "paulie walnuts",
+        "resin",
+        "sopranos",
+        "stardew",
+        "table",
+        "wenwan",
+        "woodworking",
+    }
+    ADJACENT_MARKERS = {
+        "cook",
+        "cooking",
+        "crack",
+        "cracking",
+        "grow",
+        "growing",
+        "recipe",
+        "shell",
+    }
 
     def __init__(self, api_key: str | None = None, timeout_seconds: int = 20):
         load_dotenv()
@@ -88,7 +144,7 @@ class YouTubeDataSource:
 
         videos = self._merge(search["items"], video_stats["items"], channel_stats["items"])
         videos, relevance_filter = self._filter_videos(videos, topic, manual_brief)
-        videos = [self._score_video(video) for video in videos]
+        videos = [self._score_competitor_fit(self._score_video(video), topic, manual_brief) for video in videos]
         videos.sort(key=lambda item: item.get("views_per_day", 0), reverse=True)
 
         comment_targets = [video["video_id"] for video in videos[: min(5, len(videos))]]
@@ -393,6 +449,92 @@ class YouTubeDataSource:
         video["outlier_ratio"] = outlier_ratio
         video["is_breakout"] = bool(video.get("views_per_day", 0) >= 1000 or (outlier_ratio or 0) >= 1.5)
         return video
+
+    def _score_competitor_fit(
+        self,
+        video: dict[str, Any],
+        topic: str,
+        manual_brief: dict[str, Any],
+    ) -> dict[str, Any]:
+        full_text = self._video_text(video)
+        title = video.get("title", "").lower()
+        context_terms = self._context_fit_terms(topic, manual_brief)
+        score = 20
+        reasons = []
+        penalties = []
+
+        if topic.lower() in title:
+            score += 15
+            reasons.append("topic appears in title")
+
+        matched_context = [term for term in context_terms if term in full_text]
+        if matched_context:
+            score += min(35, len(set(matched_context)) * 7)
+            reasons.append(f"matches intended context terms: {', '.join(sorted(set(matched_context))[:6])}")
+
+        matched_purposes = [
+            match.get("purpose", "")
+            for match in video.get("query_matches", [])
+            if any(term in match.get("purpose", "").lower() for term in ("health", "nutrition", "evidence", "claim", "benefit", "risk", "consumption"))
+        ]
+        if matched_purposes:
+            score += min(15, len(matched_purposes) * 5)
+            reasons.append("matched context-specific research queries")
+
+        off_context = sorted(marker for marker in self.OFF_CONTEXT_MARKERS if marker in full_text)
+        adjacent = sorted(marker for marker in self.ADJACENT_MARKERS if marker in full_text)
+        if off_context:
+            score -= min(45, len(off_context) * 18)
+            penalties.append(f"off-context markers: {', '.join(off_context[:5])}")
+        if adjacent:
+            score -= min(18, len(adjacent) * 6)
+            penalties.append(f"adjacent-context markers: {', '.join(adjacent[:5])}")
+
+        relevance_score = video.get("relevance", {}).get("score", 0)
+        if relevance_score >= 50:
+            score += 10
+            reasons.append("strong basic topic relevance")
+        elif relevance_score < 30:
+            score -= 10
+            penalties.append("weak basic topic relevance")
+
+        score = max(0, min(100, score))
+        bucket = self._competitor_fit_bucket(score, video, bool(off_context), bool(adjacent))
+        video["competitor_fit"] = {
+            "score": score,
+            "bucket": bucket,
+            "reasons": reasons,
+            "penalties": penalties,
+        }
+        return video
+
+    def _context_fit_terms(self, topic: str, manual_brief: dict[str, Any]) -> list[str]:
+        terms = set(self._manual_list(manual_brief, "topic_context"))
+        combined = f"{topic} {' '.join(terms)}".lower()
+        for group, markers in self.CONTEXT_FIT_MARKERS.items():
+            if group in combined or any(marker in combined for marker in markers):
+                terms.update(markers)
+        terms.update(self._manual_list(manual_brief, "include_keywords"))
+        terms.update(self._manual_list(manual_brief, "must_include_keywords"))
+        return [term for term in sorted(terms) if len(term) > 2]
+
+    def _competitor_fit_bucket(
+        self,
+        score: int,
+        video: dict[str, Any],
+        has_off_context: bool,
+        has_adjacent_context: bool,
+    ) -> str:
+        is_outlier = bool(video.get("is_breakout") or (video.get("outlier_ratio") or 0) >= 3)
+        if score >= 65 and not has_off_context:
+            return "strong_fit"
+        if score >= 40 and (has_adjacent_context or is_outlier):
+            return "adjacent_opportunity"
+        if has_off_context and is_outlier:
+            return "off_context_outlier"
+        if score >= 40:
+            return "adjacent_opportunity"
+        return "weak_fit"
 
     def _get_json(self, path: str, params: dict[str, Any]) -> dict[str, Any]:
         url = f"{self.base_url}{path}?{urllib.parse.urlencode(params)}"

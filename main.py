@@ -31,6 +31,12 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Filter YouTube evidence by duration. scriptable keeps videos at least 180 seconds.",
     )
+    research.add_argument(
+        "--language",
+        choices=["auto", "english"],
+        default=None,
+        help="Filter YouTube evidence by language. english rejects mostly non-English titles.",
+    )
     research.add_argument("--include-keyword", action="append", default=[], help="Keyword to include in queries/filtering")
     research.add_argument("--exclude-keyword", action="append", default=[], help="Keyword to exclude from results")
     research.add_argument("--source", choices=["auto", "youtube", "offline"], default="auto", help="Research source")
@@ -58,6 +64,8 @@ def run_research(args: argparse.Namespace) -> int:
         manual["topic_context"] = args.topic_context
     if args.content_type:
         manual["content_type"] = args.content_type
+    if args.language:
+        manual["language"] = args.language
     if args.include_keyword:
         manual["include_keywords"] = [*manual.get("include_keywords", []), *args.include_keyword]
     if args.exclude_keyword:

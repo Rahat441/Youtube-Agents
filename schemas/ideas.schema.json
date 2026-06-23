@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.youtube-agents/schemas/ideas.schema.json",
+  "title": "IdeaAgent v1 output",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "agent",
+    "created_at",
+    "input",
+    "strategy_used",
+    "generation",
+    "ideas",
+    "selected_idea",
+    "handoff_contract"
+  ],
+  "properties": {
+    "schema_version": { "const": "ideas.v1" },
+    "agent": { "const": "IdeaAgent" },
+    "created_at": { "type": "string" },
+    "input": { "type": "object" },
+    "strategy_used": { "type": "object" },
+    "generation": { "type": "object" },
+    "ideas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "idea_id",
+          "working_title",
+          "niche_lane",
+          "angle_type",
+          "viewer_promise",
+          "why_it_can_work",
+          "evidence_used",
+          "differentiation",
+          "risk_notes",
+          "score"
+        ],
+        "properties": {
+          "idea_id": { "type": "string" },
+          "working_title": { "type": "string" },
+          "niche_lane": { "type": "string" },
+          "angle_type": { "type": "string" },
+          "viewer_promise": { "type": "string" },
+          "why_it_can_work": { "type": "array" },
+          "evidence_used": { "type": "array" },
+          "differentiation": { "type": "string" },
+          "risk_notes": { "type": "array" },
+          "score": { "type": "object" }
+        }
+      }
+    },
+    "selected_idea": { "type": "object" },
+    "handoff_contract": { "type": "object" }
+  }
+}

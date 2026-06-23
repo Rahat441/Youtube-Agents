@@ -197,7 +197,8 @@
       <div class="status">
         <span class="pill">Implemented: ResearchAgent v1</span>
         <span class="pill">Implemented: StrategyAgent v1</span>
-        <span class="pill">Next: IdeaAgent</span>
+        <span class="pill">Implemented: IdeaAgent v1</span>
+        <span class="pill">Next: OutlineAgent</span>
         <span class="pill">Local-first</span>
         <span class="pill">YouTube Data API</span>
       </div>
@@ -211,6 +212,7 @@
         <li><a href="#workflow">Current Workflow</a></li>
         <li><a href="#research-agent">ResearchAgent</a></li>
         <li><a href="#strategy-agent">StrategyAgent</a></li>
+        <li><a href="#idea-agent">IdeaAgent</a></li>
         <li><a href="#schemas">Schemas And Files</a></li>
         <li><a href="#testing">Testing</a></li>
         <li><a href="#limitations">Current Limitations</a></li>
@@ -239,6 +241,10 @@
           <h3>StrategyAgent</h3>
           <p>Reads research evidence, scores niche lanes, chooses a recommended lane and angle, and writes strategy.</p>
         </div>
+        <div class="panel">
+          <h3>IdeaAgent</h3>
+          <p>Reads research and strategy artifacts, generates scored candidate ideas, and selects the top idea.</p>
+        </div>
       </div>
       <div class="callout">
         <strong>Design rule:</strong> each agent should do one job and write a structured artifact. This keeps the
@@ -252,7 +258,11 @@
         <summary>Environment</summary>
         <div class="details-body">
           <p>Put your YouTube Data API key in <code>.env</code>:</p>
-          <pre><code>YOUTUBE_API_KEY=your_key_here</code></pre>
+          <pre><code>YOUTUBE_API_KEY=your_key_here
+OPENAI_API_KEY=your_key_here
+OPENAI_IDEA_MODEL=gpt-4o-mini
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_IDEA_MODEL=llama3.1</code></pre>
           <p>
             The real <code>.env</code> file is ignored by Git. The safe template is <code>.env.example</code>.
           </p>
@@ -275,7 +285,7 @@ PYTHONPATH=. python3 -m unittest discover -s tests</code></pre>
     <section id="workflow">
       <h2>Current Workflow</h2>
       <details open>
-        <summary>Run ResearchAgent Then StrategyAgent</summary>
+        <summary>Run ResearchAgent, StrategyAgent, Then IdeaAgent</summary>
         <div class="details-body">
           <p>Step 1: collect YouTube evidence.</p>
           <pre><code>python3 main.py research \
@@ -294,10 +304,18 @@ PYTHONPATH=. python3 -m unittest discover -s tests</code></pre>
           <pre><code>python3 main.py strategy \
   --research workspace/agent_runs/YYYYMMDD_HHMMSS_topic/research.json</code></pre>
 
+          <p>Step 3: generate ideas from the research and strategy artifacts.</p>
+          <pre><code>python3 main.py ideas \
+  --research workspace/agent_runs/YYYYMMDD_HHMMSS_topic/research.json \
+  --strategy workspace/agent_runs/YYYYMMDD_HHMMSS_topic/strategy.json \
+  --ideas-per-run 5 \
+  --provider template</code></pre>
+
           <p>Outputs are saved in the same run folder:</p>
           <pre><code>workspace/agent_runs/YYYYMMDD_HHMMSS_topic/
   research.json
-  strategy.json</code></pre>
+  strategy.json
+  ideas.json</code></pre>
         </div>
       </details>
     </section>
@@ -660,6 +678,112 @@ PYTHONPATH=. python3 -m unittest discover -s tests</code></pre>
       </details>
     </section>
 
+    <section id="idea-agent">
+      <h2>IdeaAgent</h2>
+      <p>
+        IdeaAgent reads <code>research.json</code> and <code>strategy.json</code>, generates template-based or LLM-assisted
+        candidate video ideas, scores them, selects the highest-scoring idea, and writes <code>ideas.json</code>.
+        The LLM only generates raw candidates; IdeaAgent still normalizes, scores, sorts, and writes the stable artifact.
+      </p>
+
+      <details open>
+        <summary>Responsibility</summary>
+        <div class="details-body">
+          <ul>
+            <li>Use StrategyAgent's recommended lane, angle type, positioning, confidence, and key evidence.</li>
+            <li>Use ResearchAgent's strong-fit competitor evidence and claim risks.</li>
+            <li>Generate candidate video ideas.</li>
+            <li>Score ideas for strategy fit, evidence support, click potential, differentiation, feasibility, audience fit, and risk.</li>
+            <li>Select the highest-scoring idea for OutlineAgent.</li>
+          </ul>
+          <p><strong>IdeaAgent must not decide:</strong> full outline, script, thumbnail package, or final edited title.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Inputs</summary>
+        <div class="details-body">
+          <table>
+            <thead>
+              <tr><th>Input</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>research.json</code></td><td>Evidence and competitor buckets from ResearchAgent.</td></tr>
+              <tr><td><code>strategy.json</code></td><td>Recommended niche lane, angle, positioning, confidence, and key evidence.</td></tr>
+              <tr><td><code>ideas_per_run</code></td><td>How many final ideas to save.</td></tr>
+              <tr><td><code>max_candidates</code></td><td>How many internal candidates to generate and score.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details>
+        <summary>CLI Arguments</summary>
+        <div class="details-body">
+          <table>
+            <thead>
+              <tr><th>Argument</th><th>Required</th><th>Default</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>--research</code></td><td>Yes</td><td>none</td><td>Path to <code>research.json</code>.</td></tr>
+              <tr><td><code>--strategy</code></td><td>Yes</td><td>none</td><td>Path to <code>strategy.json</code>.</td></tr>
+              <tr><td><code>--ideas-per-run</code></td><td>No</td><td><code>5</code></td><td>Number of final ideas to save.</td></tr>
+              <tr><td><code>--max-candidates</code></td><td>No</td><td><code>12</code></td><td>Maximum internal candidates to generate and score.</td></tr>
+              <tr><td><code>--provider</code></td><td>No</td><td><code>template</code></td><td>Idea generator: <code>template</code>, <code>ollama</code>, or <code>openai</code>.</td></tr>
+              <tr><td><code>--model</code></td><td>No</td><td>provider default</td><td>Model name when using <code>--provider ollama</code> or <code>--provider openai</code>.</td></tr>
+              <tr><td><code>--output-dir</code></td><td>No</td><td>same folder as strategy</td><td>Custom folder for <code>ideas.json</code>.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details>
+        <summary>Outputs</summary>
+        <div class="details-body">
+          <table>
+            <thead>
+              <tr><th>Field</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>strategy_used</code></td><td>Strategy fields used by IdeaAgent.</td></tr>
+              <tr><td><code>generation</code></td><td>Provider used, model, fallback status, and any errors.</td></tr>
+              <tr><td><code>ideas</code></td><td>Scored candidate video ideas.</td></tr>
+              <tr><td><code>selected_idea</code></td><td>Highest-scoring idea.</td></tr>
+              <tr><td><code>handoff_contract</code></td><td>What OutlineAgent should use next.</td></tr>
+            </tbody>
+          </table>
+          <p>Each idea includes <code>working_title</code>, <code>niche_lane</code>, <code>angle_type</code>, <code>viewer_promise</code>, <code>why_it_can_work</code>, <code>evidence_used</code>, <code>differentiation</code>, <code>risk_notes</code>, and <code>score</code>.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Examples</summary>
+        <div class="details-body">
+          <pre><code>python3 main.py ideas \
+  --research workspace/agent_runs/20260623_051240_walnuts/research.json \
+  --strategy workspace/agent_runs/20260623_051240_walnuts/strategy.json \
+  --ideas-per-run 5 \
+  --provider template</code></pre>
+
+          <p>OpenAI-assisted generation:</p>
+          <pre><code>python3 main.py ideas \
+  --research workspace/agent_runs/20260623_051240_walnuts/research.json \
+  --strategy workspace/agent_runs/20260623_051240_walnuts/strategy.json \
+  --ideas-per-run 5 \
+  --provider openai \
+  --model gpt-4o-mini</code></pre>
+
+          <p>Ollama-assisted local generation:</p>
+          <pre><code>python3 main.py ideas \
+  --research workspace/agent_runs/20260623_051240_walnuts/research.json \
+  --strategy workspace/agent_runs/20260623_051240_walnuts/strategy.json \
+  --ideas-per-run 5 \
+  --provider ollama \
+  --model llama3.1</code></pre>
+        </div>
+      </details>
+    </section>
+
     <section id="schemas">
       <h2>Schemas And Files</h2>
       <details>
@@ -674,8 +798,10 @@ PYTHONPATH=. python3 -m unittest discover -s tests</code></pre>
               <tr><td><code>youtube_agents/agents/research_agent.py</code></td><td>ResearchAgent implementation.</td></tr>
               <tr><td><code>youtube_agents/sources/youtube_source.py</code></td><td>YouTube Data API collection and filtering.</td></tr>
               <tr><td><code>youtube_agents/agents/strategy_agent.py</code></td><td>StrategyAgent implementation.</td></tr>
+              <tr><td><code>youtube_agents/agents/idea_agent.py</code></td><td>IdeaAgent implementation.</td></tr>
               <tr><td><code>schemas/research.schema.json</code></td><td>ResearchAgent output contract.</td></tr>
               <tr><td><code>schemas/strategy.schema.json</code></td><td>StrategyAgent output contract.</td></tr>
+              <tr><td><code>schemas/ideas.schema.json</code></td><td>IdeaAgent output contract.</td></tr>
               <tr><td><code>tests/</code></td><td>Smoke tests for key behavior.</td></tr>
               <tr><td><code>workspace/agent_runs/</code></td><td>Generated run artifacts. Ignored by Git.</td></tr>
               <tr><td><code>.env</code></td><td>Local secrets. Ignored by Git.</td></tr>
@@ -699,6 +825,7 @@ PYTHONPATH=. python3 -m unittest discover -s tests</code></pre>
             <li>English language filtering.</li>
             <li>Competitor-fit bucketing.</li>
             <li>StrategyAgent lane selection from fake health research.</li>
+            <li>IdeaAgent candidate generation and selected-idea handoff.</li>
           </ul>
         </div>
       </details>
@@ -710,6 +837,7 @@ PYTHONPATH=. python3 -m unittest discover -s tests</code></pre>
   main.py \
   youtube_agents/agents/research_agent.py \
   youtube_agents/agents/strategy_agent.py \
+  youtube_agents/agents/idea_agent.py \
   youtube_agents/sources/youtube_source.py</code></pre>
         </div>
       </details>
@@ -752,10 +880,10 @@ PYTHONPATH=. python3 -m unittest discover -s tests</code></pre>
         <div class="details-body">
           <ul>
             <li>Add YouTube API response caching to save quota.</li>
-            <li>Add a schema validation command for <code>research.json</code> and <code>strategy.json</code>.</li>
+            <li>Add a schema validation command for <code>research.json</code>, <code>strategy.json</code>, and <code>ideas.json</code>.</li>
             <li>Add a markdown summary output for StrategyAgent.</li>
             <li>Improve competitor-fit scoring with more context-specific markers and better negative signals.</li>
-            <li>Add a command that runs ResearchAgent then StrategyAgent in one workflow.</li>
+            <li>Add a command that runs ResearchAgent, StrategyAgent, and IdeaAgent in one workflow.</li>
             <li>Commit the current StrategyAgent and competitor-fit changes once reviewed.</li>
           </ul>
         </div>
@@ -769,7 +897,6 @@ PYTHONPATH=. python3 -m unittest discover -s tests</code></pre>
               <tr><th>Agent</th><th>Future Responsibility</th></tr>
             </thead>
             <tbody>
-              <tr><td><code>IdeaAgent</code></td><td>Generate candidate video ideas from <code>strategy.json</code>.</td></tr>
               <tr><td><code>OutlineAgent</code></td><td>Build retention structure, sections, beats, and evidence placement.</td></tr>
               <tr><td><code>ScriptAgent</code></td><td>Draft the voiceover script from the outline.</td></tr>
               <tr><td><code>CritiqueAgent</code></td><td>Score and critique the script for clarity, retention, claims, and pacing.</td></tr>

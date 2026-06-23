@@ -12,7 +12,7 @@ Local-first rebuild of the YouTube automation pipeline. This project will be bui
 6. CritiqueAgent
 7. PackageAgent
 
-ResearchAgent v1 and StrategyAgent v1 are implemented right now.
+ResearchAgent v1, StrategyAgent v1, and IdeaAgent v1 are implemented right now.
 
 ## Setup
 
@@ -20,6 +20,10 @@ Paste your YouTube Data API key into `.env`:
 
 ```env
 YOUTUBE_API_KEY=your_key_here
+OPENAI_API_KEY=your_key_here
+OPENAI_IDEA_MODEL=gpt-4o-mini
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_IDEA_MODEL=llama3.1
 ```
 
 ## ResearchAgent V1
@@ -194,3 +198,74 @@ StrategyAgent uses:
 StrategyAgent also reports confidence from the gap between the top lanes, sample size, breakout count, source errors, and whether live YouTube evidence was available. `key_evidence` lists the specific breakout videos, title patterns, and claim risks that influenced the recommendation.
 
 It does not decide the final title, outline, script, or thumbnail package. Those belong to later agents.
+
+## IdeaAgent V1
+
+Responsibility: read `research.json` and `strategy.json`, generate scored candidate video ideas, select the highest-scoring idea, and write `ideas.json`.
+
+IdeaAgent can use `template`, `ollama`, or `openai` generation. The LLM only generates raw candidates; IdeaAgent still normalizes, scores, sorts, and writes the stable `ideas.json` contract.
+
+Inputs:
+
+- `research.json`
+- `strategy.json`
+- `ideas_per_run`
+- `max_candidates`
+
+Outputs:
+
+- `ideas.json`
+- `strategy_used`
+- `ideas`
+- `selected_idea`
+- `handoff_contract`
+
+JSON schema:
+
+- `schemas/ideas.schema.json`
+
+CLI:
+
+```bash
+python3 main.py ideas \
+  --research workspace/agent_runs/YYYYMMDD_HHMMSS_topic/research.json \
+  --strategy workspace/agent_runs/YYYYMMDD_HHMMSS_topic/strategy.json \
+  --ideas-per-run 5 \
+  --provider template
+```
+
+OpenAI generation:
+
+```bash
+python3 main.py ideas \
+  --research workspace/agent_runs/YYYYMMDD_HHMMSS_topic/research.json \
+  --strategy workspace/agent_runs/YYYYMMDD_HHMMSS_topic/strategy.json \
+  --ideas-per-run 5 \
+  --provider openai \
+  --model gpt-4o-mini
+```
+
+Ollama generation:
+
+```bash
+python3 main.py ideas \
+  --research workspace/agent_runs/YYYYMMDD_HHMMSS_topic/research.json \
+  --strategy workspace/agent_runs/YYYYMMDD_HHMMSS_topic/strategy.json \
+  --ideas-per-run 5 \
+  --provider ollama \
+  --model llama3.1
+```
+
+Each idea includes:
+
+- `working_title`
+- `niche_lane`
+- `angle_type`
+- `viewer_promise`
+- `why_it_can_work`
+- `evidence_used`
+- `differentiation`
+- `risk_notes`
+- `score`
+
+IdeaAgent does not create the outline or script. That belongs to OutlineAgent.

@@ -10,6 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+from youtube_agents.agents.idea_agent import IdeaAgent
 from youtube_agents.agents.research_agent import ResearchAgent
 from youtube_agents.agents.strategy_agent import StrategyAgent
 from youtube_agents.core.paths import project_root, read_json, slugify, timestamp, write_json
@@ -49,6 +50,15 @@ def build_parser() -> argparse.ArgumentParser:
     strategy = subparsers.add_parser("strategy", help="Run StrategyAgent from a research.json file")
     strategy.add_argument("--research", required=True, help="Path to research.json")
     strategy.add_argument("--output-dir", default=None, help="Optional output directory for strategy.json")
+
+    ideas = subparsers.add_parser("ideas", help="Run IdeaAgent from research.json and strategy.json")
+    ideas.add_argument("--research", required=True, help="Path to research.json")
+    ideas.add_argument("--strategy", required=True, help="Path to strategy.json")
+    ideas.add_argument("--ideas-per-run", type=int, default=5, help="Number of final ideas to save")
+    ideas.add_argument("--max-candidates", type=int, default=12, help="Max internal candidates to generate and score")
+    ideas.add_argument("--provider", choices=["template", "ollama", "openai"], default="template", help="Idea generation provider")
+    ideas.add_argument("--model", default=None, help="LLM model name when using --provider ollama or openai")
+    ideas.add_argument("--output-dir", default=None, help="Optional output directory for ideas.json")
     return parser
 
 
@@ -59,6 +69,8 @@ def main(argv: list[str] | None = None) -> int:
         return run_research(args)
     if args.command == "strategy":
         return run_strategy(args)
+    if args.command == "ideas":
+        return run_ideas(args)
     parser.error(f"Unknown command: {args.command}")
     return 2
 
@@ -134,6 +146,37 @@ def run_strategy(args: argparse.Namespace) -> int:
                 "strategy_path": str(output_path),
                 "recommended_niche_lane": strategy["recommended_niche_lane"],
                 "recommended_angle": strategy["recommended_angle"],
+            },
+            indent=2,
+        )
+    )
+    return 0
+
+
+def run_ideas(args: argparse.Namespace) -> int:
+    research_path = Path(args.research)
+    strategy_path = Path(args.strategy)
+    research = read_json(research_path)
+    strategy = read_json(strategy_path)
+    ideas = IdeaAgent().run(
+        research=research,
+        strategy=strategy,
+        ideas_per_run=args.ideas_per_run,
+        max_candidates=args.max_candidates,
+        provider=args.provider,
+        model=args.model,
+    )
+    output_dir = Path(args.output_dir) if args.output_dir else strategy_path.parent
+    output_path = output_dir / "ideas.json"
+    write_json(output_path, ideas)
+    print(
+        json.dumps(
+            {
+                "ok": True,
+                "ideas_path": str(output_path),
+                "selected_idea_id": ideas.get("selected_idea", {}).get("idea_id"),
+                "selected_working_title": ideas.get("selected_idea", {}).get("working_title"),
+                "generation": ideas.get("generation", {}),
             },
             indent=2,
         )

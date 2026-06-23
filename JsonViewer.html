@@ -276,7 +276,7 @@
   <header>
     <div class="shell">
       <h1>YouTube Agents JSON Viewer</h1>
-      <p>Open <code>research.json</code> and <code>strategy.json</code> files locally, then inspect the data in organized tables and summaries.</p>
+      <p>Open <code>research.json</code>, <code>strategy.json</code>, and <code>ideas.json</code> files locally, then inspect the data in organized tables and summaries.</p>
       <div class="toolbar">
         <div class="file-control">
           <label for="researchFile">Research JSON</label>
@@ -285,6 +285,10 @@
         <div class="file-control">
           <label for="strategyFile">Strategy JSON</label>
           <input id="strategyFile" type="file" accept=".json,application/json">
+        </div>
+        <div class="file-control">
+          <label for="ideasFile">Ideas JSON</label>
+          <input id="ideasFile" type="file" accept=".json,application/json">
         </div>
       </div>
     </div>
@@ -296,6 +300,7 @@
       <button data-tab="research">Research</button>
       <button data-tab="videos">Videos</button>
       <button data-tab="strategy">Strategy</button>
+      <button data-tab="ideas">Ideas</button>
       <button data-tab="raw">Raw JSON</button>
     </div>
 
@@ -303,20 +308,24 @@
     <section class="section" id="research"></section>
     <section class="section" id="videos"></section>
     <section class="section" id="strategy"></section>
+    <section class="section" id="ideas"></section>
     <section class="section" id="raw"></section>
   </main>
 
   <script>
     let researchData = null;
     let strategyData = null;
+    let ideasData = null;
     let researchName = "";
     let strategyName = "";
+    let ideasName = "";
 
     const sections = {
       overview: document.getElementById("overview"),
       research: document.getElementById("research"),
       videos: document.getElementById("videos"),
       strategy: document.getElementById("strategy"),
+      ideas: document.getElementById("ideas"),
       raw: document.getElementById("raw")
     };
 
@@ -345,6 +354,14 @@
       renderAll();
     });
 
+    document.getElementById("ideasFile").addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      ideasData = await readJsonFile(file);
+      ideasName = file.name;
+      renderAll();
+    });
+
     function readJsonFile(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -366,6 +383,7 @@
       renderResearch();
       renderVideos();
       renderStrategy();
+      renderIdeas();
       renderRaw();
     }
 
@@ -384,6 +402,7 @@
           ${metric("Videos", formatNumber(market.videos_collected || researchData?.competitor_videos?.length || 0))}
           ${metric("Breakouts", formatNumber(market.breakout_count || researchData?.breakout_videos?.length || 0))}
           ${metric("Strategy Confidence", confidence.level ? `${escapeHtml(confidence.level)} (${confidence.score})` : "Not loaded")}
+          ${metric("Selected Idea", escapeHtml(ideasData?.selected_idea?.idea_id || "Not loaded"))}
         </div>
         <div class="split">
           <div class="list">
@@ -392,12 +411,14 @@
             <p><strong>Style:</strong> ${escapeHtml(style || "Not loaded")}</p>
             <p><strong>Research file:</strong> ${escapeHtml(researchName || "Not loaded")}</p>
             <p><strong>Strategy file:</strong> ${escapeHtml(strategyName || "Not loaded")}</p>
+            <p><strong>Ideas file:</strong> ${escapeHtml(ideasName || "Not loaded")}</p>
           </div>
           <div class="list">
             <h3>Recommendation</h3>
             <p><strong>Lane:</strong> ${escapeHtml(strategyData?.recommended_niche_lane || "Not loaded")}</p>
             <p><strong>Angle:</strong> ${escapeHtml(strategyData?.recommended_angle || "Not loaded")}</p>
             <p><strong>Positioning:</strong> ${escapeHtml(strategyData?.positioning || "Not loaded")}</p>
+            <p><strong>Selected idea:</strong> ${escapeHtml(ideasData?.selected_idea?.working_title || "Not loaded")}</p>
           </div>
         </div>
       `;
@@ -497,6 +518,31 @@
       `;
     }
 
+    function renderIdeas() {
+      if (!ideasData) {
+        sections.ideas.innerHTML = notice("Load an ideas.json file to inspect candidate ideas.", "warn");
+        return;
+      }
+      const selected = ideasData.selected_idea || {};
+      sections.ideas.innerHTML = `
+        <h2>Ideas Summary</h2>
+        <div class="metrics">
+          ${metric("Ideas Saved", formatNumber((ideasData.ideas || []).length))}
+          ${metric("Selected Idea", escapeHtml(selected.idea_id || ""))}
+          ${metric("Selected Score", formatNumber(selected.score?.total || 0))}
+          ${metric("Angle Type", escapeHtml(selected.angle_type || ""))}
+        </div>
+        <div class="list">
+          <h3>Selected Idea</h3>
+          <p><strong>${escapeHtml(selected.working_title || "")}</strong></p>
+          <p>${escapeHtml(selected.viewer_promise || "")}</p>
+          <p><strong>Differentiation:</strong> ${escapeHtml(selected.differentiation || "")}</p>
+        </div>
+        <h3>Candidate Ideas</h3>
+        ${ideasTable(ideasData.ideas || [])}
+      `;
+    }
+
     function renderRaw() {
       sections.raw.innerHTML = `
         <h2>Raw JSON</h2>
@@ -508,7 +554,23 @@
           <summary>strategy.json</summary>
           <div class="details-body"><pre><code>${escapeHtml(strategyData ? JSON.stringify(strategyData, null, 2) : "Not loaded")}</code></pre></div>
         </details>
+        <details>
+          <summary>ideas.json</summary>
+          <div class="details-body"><pre><code>${escapeHtml(ideasData ? JSON.stringify(ideasData, null, 2) : "Not loaded")}</code></pre></div>
+        </details>
       `;
+    }
+
+    function ideasTable(ideas) {
+      return table(["ID", "Title", "Lane", "Angle Type", "Score", "Promise", "Differentiation"], ideas.map(item => [
+        escapeHtml(item.idea_id || ""),
+        escapeHtml(item.working_title || ""),
+        escapeHtml(item.niche_lane || ""),
+        escapeHtml(item.angle_type || ""),
+        formatNumber(item.score?.total || 0),
+        escapeHtml(item.viewer_promise || ""),
+        escapeHtml(item.differentiation || "")
+      ]));
     }
 
     function videoDetails(title, videos, open = true) {

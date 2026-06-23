@@ -13,7 +13,7 @@ Target pipeline
 7. PackageAgent
 
 Current scope
-ResearchAgent v1 and StrategyAgent v1.
+ResearchAgent v1, StrategyAgent v1, and IdeaAgent v1.
 
 ResearchAgent responsibility
 Collect clean topic and YouTube evidence. It must not decide the final niche lane, recommended angle, premise, or script direction.
@@ -127,3 +127,32 @@ IdeaAgent will later read strategy.json and generate candidate video ideas. Stra
 
 Competitor fit rule
 ResearchAgent should score and bucket competitor fit rather than hard-delete weird outliers. Strong-fit videos should drive strategy. Adjacent opportunities and off-context outliers should remain available for creative inspiration.
+
+IdeaAgent responsibility
+Read research.json and strategy.json, generate scored candidate video ideas, select the highest-scoring idea, and produce ideas.json.
+
+IdeaAgent inputs
+- research.json
+- strategy.json
+- ideas_per_run
+- max_candidates
+
+IdeaAgent outputs
+- ideas.json
+- strategy_used
+- ideas
+- selected_idea
+- handoff_contract
+
+IdeaAgent CLI
+python3 main.py ideas --research workspace/agent_runs/YYYYMMDD_HHMMSS_topic/research.json --strategy workspace/agent_runs/YYYYMMDD_HHMMSS_topic/strategy.json --ideas-per-run 5 --provider template
+
+IdeaAgent LLM mode
+python3 main.py ideas --research workspace/agent_runs/YYYYMMDD_HHMMSS_topic/research.json --strategy workspace/agent_runs/YYYYMMDD_HHMMSS_topic/strategy.json --ideas-per-run 5 --provider openai --model gpt-4o-mini
+python3 main.py ideas --research workspace/agent_runs/YYYYMMDD_HHMMSS_topic/research.json --strategy workspace/agent_runs/YYYYMMDD_HHMMSS_topic/strategy.json --ideas-per-run 5 --provider ollama --model llama3.1
+
+IdeaAgent provider rule
+The LLM only generates raw candidates. IdeaAgent still normalizes, scores, sorts, and writes the same ideas.json contract. If the LLM call fails or returns invalid JSON, it falls back to templates and records the error in generation.
+
+IdeaAgent handoff
+OutlineAgent will later read ideas.json and turn selected_idea into a structured outline. IdeaAgent must not decide the full outline, script, thumbnail package, or final edited title.

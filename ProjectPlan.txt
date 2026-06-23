@@ -1,0 +1,75 @@
+YouTube Agents Rebuild Plan
+
+Goal
+Build a local-first Python pipeline that creates YouTube video projects from a topic, one agent at a time.
+
+Target pipeline
+1. ResearchAgent
+2. StrategyAgent
+3. IdeaAgent
+4. OutlineAgent
+5. ScriptAgent
+6. CritiqueAgent
+7. PackageAgent
+
+Current scope
+ResearchAgent v1 only.
+
+ResearchAgent responsibility
+Collect clean topic and YouTube evidence. It must not decide the final niche lane, recommended angle, premise, or script direction.
+
+ResearchAgent inputs
+- topic
+- audience
+- style
+- manual_brief
+- youtube_settings
+
+ResearchAgent outputs
+- research.json
+- query_plan
+- evidence_status
+- market_stats
+- competitor_videos
+- breakout_videos
+- title_patterns
+- viewer_pains
+- claims_to_verify
+- source_errors
+- handoff_contract
+
+ResearchAgent CLI
+python3 main.py research --topic "walnuts" --audience "health curious adults" --style "documentary explainer" --source youtube --content-type scriptable
+
+YouTube API setup
+Paste the key into Youtube-Agents/.env:
+YOUTUBE_API_KEY=your_key_here
+
+Query template design
+ResearchAgent uses neutral evidence templates:
+- {topic}
+- {topic} explained
+- {topic} benefits
+- {topic} risks
+- {topic} mistakes
+- {topic} myths
+- {topic} what happens
+- {topic} science
+- {topic} beginner guide
+
+It also adds topic-sensitive evidence templates for health, money, and tech topics, plus optional audience/style/manual context queries. It must not force niche-lane searches like "POV life as {topic}".
+
+Content type
+ResearchAgent can filter YouTube evidence by duration:
+- both: keep all durations
+- shortform: keep videos up to 60 seconds
+- midform: keep videos from 61 to 239 seconds
+- longform: keep videos at least 240 seconds
+- scriptable: keep videos at least 180 seconds
+
+Smoke checks
+PYTHONPATH=. python3 -m unittest discover -s tests
+python3 main.py research --topic "walnuts" --source offline
+
+StrategyAgent handoff
+StrategyAgent will later read research.json, choose a recommended niche lane and angle, explain rationale, and produce strategy.json.

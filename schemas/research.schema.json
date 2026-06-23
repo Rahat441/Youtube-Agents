@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.youtube-agents/schemas/research.schema.json",
+  "title": "ResearchAgent v1 output",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "agent",
+    "created_at",
+    "input",
+    "query_plan",
+    "evidence_status",
+    "market_stats",
+    "competitor_videos",
+    "breakout_videos",
+    "title_patterns",
+    "viewer_pains",
+    "claims_to_verify",
+    "source_errors",
+    "handoff_contract"
+  ],
+  "properties": {
+    "schema_version": { "const": "research.v1" },
+    "agent": { "const": "ResearchAgent" },
+    "created_at": { "type": "string" },
+    "input": {
+      "type": "object",
+      "required": ["topic", "audience", "style", "manual_brief", "youtube_settings"],
+      "properties": {
+        "topic": { "type": "string" },
+        "audience": { "type": "string" },
+        "style": { "type": "string" },
+        "manual_brief": { "type": "object" },
+        "youtube_settings": { "type": "object" }
+      }
+    },
+    "query_plan": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["query", "purpose"],
+        "properties": {
+          "query": { "type": "string" },
+          "purpose": { "type": "string" }
+        }
+      }
+    },
+    "evidence_status": { "type": "object" },
+    "market_stats": { "type": "object" },
+    "competitor_videos": { "type": "array" },
+    "breakout_videos": { "type": "array" },
+    "title_patterns": { "type": "array" },
+    "viewer_pains": { "type": "array" },
+    "claims_to_verify": { "type": "array" },
+    "source_errors": { "type": "array" },
+    "handoff_contract": { "type": "object" }
+  }
+}
+

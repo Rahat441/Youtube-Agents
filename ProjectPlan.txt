@@ -7,13 +7,12 @@ Target pipeline
 1. ResearchAgent
 2. StrategyAgent
 3. IdeaAgent
-4. OutlineAgent
-5. ScriptAgent
-6. CritiqueAgent
-7. PackageAgent
+4. ScriptAgent
+5. CritiqueAgent
+6. PackageAgent
 
 Current scope
-ResearchAgent v1, StrategyAgent v1, and IdeaAgent v1.
+ResearchAgent v1, StrategyAgent v1, IdeaAgent v1, and ScriptAgent v1.
 
 ResearchAgent responsibility
 Collect clean topic and YouTube evidence. It must not decide the final niche lane, recommended angle, premise, or script direction.
@@ -123,7 +122,7 @@ StrategyAgent scoring signals
 - saturation penalties
 
 StrategyAgent handoff
-IdeaAgent will later read strategy.json and generate candidate video ideas. StrategyAgent must not decide the final title, full outline, script, or thumbnail package.
+IdeaAgent will later read strategy.json and generate candidate video ideas. StrategyAgent must not decide the final title, script, or thumbnail package.
 
 Competitor fit rule
 ResearchAgent should score and bucket competitor fit rather than hard-delete weird outliers. Strong-fit videos should drive strategy. Adjacent opportunities and off-context outliers should remain available for creative inspiration.
@@ -158,4 +157,40 @@ IdeaAgent provider rule
 The LLM only generates raw candidates. IdeaAgent still normalizes, scores, sorts, and writes the same ideas.json contract. If the LLM call fails or returns invalid JSON, it falls back to templates and records the error in generation.
 
 IdeaAgent handoff
-OutlineAgent will later read ideas.json and turn selected_idea into a structured outline. IdeaAgent must not decide the full outline, script, thumbnail package, or final edited title.
+ScriptAgent reads ideas.json and turns selected_idea into a structured script artifact. IdeaAgent must not decide the script, thumbnail package, or final edited title.
+
+ScriptAgent responsibility
+Read research.json, strategy.json, and ideas.json, use an LLM to draft the selected idea into script.json, and preserve claim/evidence notes for critique.
+
+ScriptAgent inputs
+- research.json
+- strategy.json
+- ideas.json
+- provider
+- model
+- target_duration_minutes
+- script_style
+- llm_timeout_seconds
+
+ScriptAgent outputs
+- script.json
+- selected_idea_used
+- strategy_used
+- generation
+- script
+- claims_to_verify
+- source_evidence_used
+- revision_notes
+- handoff_contract
+
+ScriptAgent CLI
+python3 main.py script --research workspace/agent_runs/YYYYMMDD_HHMMSS_topic/research.json --strategy workspace/agent_runs/YYYYMMDD_HHMMSS_topic/strategy.json --ideas workspace/agent_runs/YYYYMMDD_HHMMSS_topic/ideas.json --provider ollama --model llama3.1 --target-duration-minutes 8 --llm-timeout-seconds 300
+
+ScriptAgent provider rule
+ScriptAgent is LLM-only and does not use a template fallback. If the LLM call fails or returns unusable JSON, it writes script.json with status failed and records the error in generation.errors.
+
+ScriptAgent timeout rule
+ScriptAgent uses a request timeout so local LLM calls do not hang forever. This does not cap Ollama context size, output length, or model settings. Use --llm-timeout-seconds 0 to disable the timeout.
+
+ScriptAgent handoff
+CritiqueAgent will later read script.json and review the draft for clarity, retention, pacing, evidence quality, and claim risk. ScriptAgent must not decide the final published title, thumbnail package, upload metadata, or final factual approval.

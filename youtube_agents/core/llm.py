@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import socket
 import urllib.error
 import urllib.request
 from typing import Any
@@ -60,7 +61,7 @@ class OpenAIChatClient:
         except urllib.error.HTTPError as error:
             body = error.read().decode("utf-8", errors="replace")
             return {"ok": False, "error": f"HTTP {error.code}: {body}", "model": self.model}
-        except (urllib.error.URLError, TimeoutError, KeyError, IndexError, json.JSONDecodeError) as error:
+        except (urllib.error.URLError, TimeoutError, socket.timeout, KeyError, IndexError, json.JSONDecodeError) as error:
             return {"ok": False, "error": str(error), "model": self.model}
 
 
@@ -119,7 +120,7 @@ class OllamaChatClient:
                 "model": self.model,
                 "settings": self._settings(),
             }
-        except (urllib.error.URLError, TimeoutError, KeyError, json.JSONDecodeError) as error:
+        except (urllib.error.URLError, TimeoutError, socket.timeout, KeyError, json.JSONDecodeError) as error:
             return {
                 "ok": False,
                 "error": str(error),

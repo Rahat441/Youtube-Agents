@@ -63,8 +63,8 @@ class IdeaAgent:
             "ideas": ideas[:ideas_per_run],
             "selected_idea": selected_idea,
             "handoff_contract": {
-                "next_agent": "OutlineAgent",
-                "outline_agent_should_use": [
+                "next_agent": "ScriptAgent",
+                "script_agent_should_use": [
                     "selected_idea.working_title",
                     "selected_idea.niche_lane",
                     "selected_idea.angle_type",
@@ -73,7 +73,6 @@ class IdeaAgent:
                     "selected_idea.risk_notes",
                 ],
                 "idea_agent_must_not_decide": [
-                    "full outline",
                     "script",
                     "thumbnail package",
                     "final edited title",

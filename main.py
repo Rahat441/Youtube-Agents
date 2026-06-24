@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from youtube_agents.agents.idea_agent import IdeaAgent
 from youtube_agents.agents.research_agent import ResearchAgent
+from youtube_agents.agents.script_agent import ScriptAgent
 from youtube_agents.agents.strategy_agent import StrategyAgent
 from youtube_agents.core.paths import project_root, read_json, slugify, timestamp, write_json
 from youtube_agents.sources.youtube_source import YouTubeDataSource
@@ -59,6 +60,22 @@ def build_parser() -> argparse.ArgumentParser:
     ideas.add_argument("--provider", choices=["template", "ollama", "openai"], default="template", help="Idea generation provider")
     ideas.add_argument("--model", default=None, help="LLM model name when using --provider ollama or openai")
     ideas.add_argument("--output-dir", default=None, help="Optional output directory for ideas.json")
+
+    script = subparsers.add_parser("script", help="Run ScriptAgent from research.json, strategy.json, and ideas.json")
+    script.add_argument("--research", required=True, help="Path to research.json")
+    script.add_argument("--strategy", required=True, help="Path to strategy.json")
+    script.add_argument("--ideas", required=True, help="Path to ideas.json")
+    script.add_argument("--provider", choices=["ollama", "openai"], default="ollama", help="LLM provider for script generation")
+    script.add_argument("--model", default=None, help="LLM model name when using --provider ollama or openai")
+    script.add_argument("--target-duration-minutes", type=float, default=8.0, help="Target script duration in minutes")
+    script.add_argument("--script-style", default="clear, evidence-led YouTube narration", help="Narration style for the script")
+    script.add_argument(
+        "--llm-timeout-seconds",
+        type=int,
+        default=300,
+        help="Maximum seconds to wait for the LLM request. Use 0 to disable the timeout.",
+    )
+    script.add_argument("--output-dir", default=None, help="Optional output directory for script.json")
     return parser
 
 
@@ -71,6 +88,8 @@ def main(argv: list[str] | None = None) -> int:
         return run_strategy(args)
     if args.command == "ideas":
         return run_ideas(args)
+    if args.command == "script":
+        return run_script(args)
     parser.error(f"Unknown command: {args.command}")
     return 2
 
@@ -182,6 +201,42 @@ def run_ideas(args: argparse.Namespace) -> int:
         )
     )
     return 0
+
+
+def run_script(args: argparse.Namespace) -> int:
+    research_path = Path(args.research)
+    strategy_path = Path(args.strategy)
+    ideas_path = Path(args.ideas)
+    research = read_json(research_path)
+    strategy = read_json(strategy_path)
+    ideas = read_json(ideas_path)
+    script = ScriptAgent().run(
+        research=research,
+        strategy=strategy,
+        ideas=ideas,
+        provider=args.provider,
+        model=args.model,
+        target_duration_minutes=args.target_duration_minutes,
+        script_style=args.script_style,
+        llm_timeout_seconds=args.llm_timeout_seconds or None,
+    )
+    output_dir = Path(args.output_dir) if args.output_dir else ideas_path.parent
+    output_path = output_dir / "script.json"
+    write_json(output_path, script)
+    ok = script.get("status") == "complete"
+    print(
+        json.dumps(
+            {
+                "ok": ok,
+                "script_path": str(output_path),
+                "status": script.get("status"),
+                "working_title": script.get("script", {}).get("working_title"),
+                "generation": script.get("generation", {}),
+            },
+            indent=2,
+        )
+    )
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":

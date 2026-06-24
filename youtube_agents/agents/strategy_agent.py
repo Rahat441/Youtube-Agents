@@ -144,7 +144,6 @@ class StrategyAgent:
                 ],
                 "strategy_agent_must_not_decide": [
                     "final title",
-                    "full outline",
                     "script premise details",
                     "thumbnail package",
                 ],

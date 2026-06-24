@@ -198,7 +198,8 @@
         <span class="pill">Implemented: ResearchAgent v1</span>
         <span class="pill">Implemented: StrategyAgent v1</span>
         <span class="pill">Implemented: IdeaAgent v1</span>
-        <span class="pill">Next: OutlineAgent</span>
+        <span class="pill">Implemented: ScriptAgent v1</span>
+        <span class="pill">Next: CritiqueAgent</span>
         <span class="pill">Local-first</span>
         <span class="pill">YouTube Data API</span>
       </div>
@@ -213,6 +214,7 @@
         <li><a href="#research-agent">ResearchAgent</a></li>
         <li><a href="#strategy-agent">StrategyAgent</a></li>
         <li><a href="#idea-agent">IdeaAgent</a></li>
+        <li><a href="#script-agent">ScriptAgent</a></li>
         <li><a href="#schemas">Schemas And Files</a></li>
         <li><a href="#testing">Testing</a></li>
         <li><a href="#limitations">Current Limitations</a></li>
@@ -228,7 +230,6 @@
       <pre><code>ResearchAgent
   -> StrategyAgent
   -> IdeaAgent
-  -> OutlineAgent
   -> ScriptAgent
   -> CritiqueAgent
   -> PackageAgent</code></pre>
@@ -244,6 +245,10 @@
         <div class="panel">
           <h3>IdeaAgent</h3>
           <p>Reads research and strategy artifacts, generates scored candidate ideas, and selects the top idea.</p>
+        </div>
+        <div class="panel">
+          <h3>ScriptAgent</h3>
+          <p>Uses an LLM to draft a structured script from the selected idea and evidence package.</p>
         </div>
       </div>
       <div class="callout">
@@ -280,6 +285,8 @@ OLLAMA_IDEA_MODEL=llama3.1</code></pre>
 
 python3 main.py research --help
 python3 main.py strategy --help
+python3 main.py ideas --help
+python3 main.py script --help
 
 PYTHONPATH=. python3 -m unittest discover -s tests</code></pre>
         </div>
@@ -289,7 +296,7 @@ PYTHONPATH=. python3 -m unittest discover -s tests</code></pre>
     <section id="workflow">
       <h2>Current Workflow</h2>
       <details open>
-        <summary>Run ResearchAgent, StrategyAgent, Then IdeaAgent</summary>
+        <summary>Run ResearchAgent, StrategyAgent, IdeaAgent, Then ScriptAgent</summary>
         <div class="details-body">
           <p>Step 1: collect YouTube evidence.</p>
           <pre><code>python3 main.py research \
@@ -315,11 +322,22 @@ PYTHONPATH=. python3 -m unittest discover -s tests</code></pre>
   --ideas-per-run 5 \
   --provider template</code></pre>
 
+          <p>Step 4: draft the script from the selected idea.</p>
+          <pre><code>python3 main.py script \
+  --research workspace/agent_runs/YYYYMMDD_HHMMSS_topic/research.json \
+  --strategy workspace/agent_runs/YYYYMMDD_HHMMSS_topic/strategy.json \
+  --ideas workspace/agent_runs/YYYYMMDD_HHMMSS_topic/ideas.json \
+  --provider ollama \
+  --model llama3.1 \
+  --target-duration-minutes 8 \
+  --llm-timeout-seconds 300</code></pre>
+
           <p>Outputs are saved in the same run folder:</p>
           <pre><code>workspace/agent_runs/YYYYMMDD_HHMMSS_topic/
   research.json
   strategy.json
-  ideas.json</code></pre>
+  ideas.json
+  script.json</code></pre>
         </div>
       </details>
     </section>
@@ -343,7 +361,7 @@ PYTHONPATH=. python3 -m unittest discover -s tests</code></pre>
             <li>Score performance signals such as <code>views_per_day</code>, <code>engagement_rate</code>, <code>outlier_ratio</code>, and <code>is_breakout</code>.</li>
             <li>Bucket competitor fit without deleting creative outliers.</li>
           </ul>
-          <p><strong>ResearchAgent must not decide:</strong> final niche lane, final angle, script premise, title, outline, or package.</p>
+          <p><strong>ResearchAgent must not decide:</strong> final niche lane, final angle, script premise, title, or package.</p>
         </div>
       </details>
 
@@ -566,7 +584,7 @@ PYTHONPATH=. python3 -m unittest discover -s tests</code></pre>
             <li>Choose a recommended niche lane and secondary niche lane.</li>
             <li>Choose a recommended angle, angle type, positioning, confidence, and key evidence.</li>
           </ul>
-          <p><strong>StrategyAgent must not decide:</strong> final title, full outline, script, thumbnail package, or final video package.</p>
+          <p><strong>StrategyAgent must not decide:</strong> final title, script, thumbnail package, or final video package.</p>
         </div>
       </details>
 
@@ -698,9 +716,9 @@ PYTHONPATH=. python3 -m unittest discover -s tests</code></pre>
             <li>Use ResearchAgent's strong-fit competitor evidence and claim risks.</li>
             <li>Generate candidate video ideas.</li>
             <li>Score ideas for strategy fit, evidence support, click potential, differentiation, feasibility, audience fit, and risk.</li>
-            <li>Select the highest-scoring idea for OutlineAgent.</li>
+            <li>Select the highest-scoring idea for ScriptAgent.</li>
           </ul>
-          <p><strong>IdeaAgent must not decide:</strong> full outline, script, thumbnail package, or final edited title.</p>
+          <p><strong>IdeaAgent must not decide:</strong> script, thumbnail package, or final edited title.</p>
         </div>
       </details>
 
@@ -753,7 +771,7 @@ PYTHONPATH=. python3 -m unittest discover -s tests</code></pre>
               <tr><td><code>generation</code></td><td>Provider used, model, fallback status, and any errors.</td></tr>
               <tr><td><code>ideas</code></td><td>Scored candidate video ideas.</td></tr>
               <tr><td><code>selected_idea</code></td><td>Highest-scoring idea.</td></tr>
-              <tr><td><code>handoff_contract</code></td><td>What OutlineAgent should use next.</td></tr>
+              <tr><td><code>handoff_contract</code></td><td>What ScriptAgent should use next.</td></tr>
             </tbody>
           </table>
           <p>Each idea includes <code>working_title</code>, <code>niche_lane</code>, <code>angle_type</code>, <code>viewer_promise</code>, <code>why_it_can_work</code>, <code>evidence_used</code>, <code>differentiation</code>, <code>risk_notes</code>, and <code>score</code>.</p>
@@ -793,6 +811,107 @@ PYTHONPATH=. python3 -m unittest discover -s tests</code></pre>
       </details>
     </section>
 
+    <section id="script-agent">
+      <h2>ScriptAgent</h2>
+      <p>
+        ScriptAgent reads <code>research.json</code>, <code>strategy.json</code>, and <code>ideas.json</code>,
+        then uses an LLM to draft <code>script.json</code> for the selected idea. It is LLM-only: if generation
+        fails, it writes a failed artifact with the error instead of using a fake template script.
+      </p>
+
+      <details open>
+        <summary>Responsibility</summary>
+        <div class="details-body">
+          <ul>
+            <li>Use the selected idea as the core premise.</li>
+            <li>Use strategy positioning and key evidence as guardrails.</li>
+            <li>Draft a full voiceover script with hook, intro, body sections, CTA, and full script text.</li>
+            <li>Carry forward claims that need verification for CritiqueAgent.</li>
+          </ul>
+          <p><strong>ScriptAgent must not decide:</strong> final published title, thumbnail package, upload metadata, or final factual approval.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Inputs</summary>
+        <div class="details-body">
+          <table>
+            <thead>
+              <tr><th>Input</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>research.json</code></td><td>Evidence, competitors, title patterns, viewer pains, and claims to verify.</td></tr>
+              <tr><td><code>strategy.json</code></td><td>Recommended lane, angle, positioning, confidence, and key evidence.</td></tr>
+              <tr><td><code>ideas.json</code></td><td>The selected idea and its evidence/risk notes.</td></tr>
+              <tr><td><code>provider</code></td><td><code>ollama</code> or <code>openai</code>.</td></tr>
+              <tr><td><code>model</code></td><td>Optional model override.</td></tr>
+              <tr><td><code>target_duration_minutes</code></td><td>Desired script length.</td></tr>
+              <tr><td><code>script_style</code></td><td>Narration style instruction.</td></tr>
+              <tr><td><code>llm_timeout_seconds</code></td><td>Maximum seconds to wait for the LLM request. Use <code>0</code> to disable.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details>
+        <summary>CLI Arguments</summary>
+        <div class="details-body">
+          <table>
+            <thead>
+              <tr><th>Argument</th><th>Required</th><th>Default</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>--research</code></td><td>Yes</td><td>none</td><td>Path to <code>research.json</code>.</td></tr>
+              <tr><td><code>--strategy</code></td><td>Yes</td><td>none</td><td>Path to <code>strategy.json</code>.</td></tr>
+              <tr><td><code>--ideas</code></td><td>Yes</td><td>none</td><td>Path to <code>ideas.json</code>.</td></tr>
+              <tr><td><code>--provider</code></td><td>No</td><td><code>ollama</code></td><td>Script generator: <code>ollama</code> or <code>openai</code>.</td></tr>
+              <tr><td><code>--model</code></td><td>No</td><td>provider default</td><td>Model name.</td></tr>
+              <tr><td><code>--target-duration-minutes</code></td><td>No</td><td><code>8</code></td><td>Target script duration.</td></tr>
+              <tr><td><code>--script-style</code></td><td>No</td><td>evidence-led narration</td><td>Style instruction for the draft.</td></tr>
+              <tr><td><code>--llm-timeout-seconds</code></td><td>No</td><td><code>300</code></td><td>Maximum seconds to wait for the LLM request. Use <code>0</code> to disable.</td></tr>
+              <tr><td><code>--output-dir</code></td><td>No</td><td>same folder as ideas</td><td>Custom folder for <code>script.json</code>.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details>
+        <summary>Outputs</summary>
+        <div class="details-body">
+          <table>
+            <thead>
+              <tr><th>Field</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>status</code></td><td><code>complete</code> or <code>failed</code>.</td></tr>
+              <tr><td><code>generation</code></td><td>Provider, model, settings, validation errors, and generation errors.</td></tr>
+              <tr><td><code>script</code></td><td>Hook, intro, body sections, CTA, full script, claims used, and editor notes.</td></tr>
+              <tr><td><code>claims_to_verify</code></td><td>Research and script claims that need checking before publication.</td></tr>
+              <tr><td><code>source_evidence_used</code></td><td>Evidence carried into the script draft.</td></tr>
+              <tr><td><code>handoff_contract</code></td><td>What CritiqueAgent should use next.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details>
+        <summary>Examples</summary>
+        <div class="details-body">
+          <pre><code>python3 main.py script \
+  --research workspace/agent_runs/20260623_051240_walnuts/research.json \
+  --strategy workspace/agent_runs/20260623_051240_walnuts/strategy.json \
+  --ideas workspace/agent_runs/20260623_051240_walnuts/ideas.json \
+  --provider ollama \
+  --model llama3.1 \
+  --target-duration-minutes 8 \
+  --llm-timeout-seconds 300</code></pre>
+          <p>
+            The timeout prevents hanging terminal sessions. It does not cap Ollama context size, output length, or model settings.
+          </p>
+        </div>
+      </details>
+    </section>
+
     <section id="schemas">
       <h2>Schemas And Files</h2>
       <details>
@@ -808,9 +927,11 @@ PYTHONPATH=. python3 -m unittest discover -s tests</code></pre>
               <tr><td><code>youtube_agents/sources/youtube_source.py</code></td><td>YouTube Data API collection and filtering.</td></tr>
               <tr><td><code>youtube_agents/agents/strategy_agent.py</code></td><td>StrategyAgent implementation.</td></tr>
               <tr><td><code>youtube_agents/agents/idea_agent.py</code></td><td>IdeaAgent implementation.</td></tr>
+              <tr><td><code>youtube_agents/agents/script_agent.py</code></td><td>ScriptAgent implementation.</td></tr>
               <tr><td><code>schemas/research.schema.json</code></td><td>ResearchAgent output contract.</td></tr>
               <tr><td><code>schemas/strategy.schema.json</code></td><td>StrategyAgent output contract.</td></tr>
               <tr><td><code>schemas/ideas.schema.json</code></td><td>IdeaAgent output contract.</td></tr>
+              <tr><td><code>schemas/script.schema.json</code></td><td>ScriptAgent output contract.</td></tr>
               <tr><td><code>tests/</code></td><td>Smoke tests for key behavior.</td></tr>
               <tr><td><code>workspace/agent_runs/</code></td><td>Generated run artifacts. Ignored by Git.</td></tr>
               <tr><td><code>.env</code></td><td>Local secrets. Ignored by Git.</td></tr>
@@ -835,6 +956,7 @@ PYTHONPATH=. python3 -m unittest discover -s tests</code></pre>
             <li>Competitor-fit bucketing.</li>
             <li>StrategyAgent lane selection from fake health research.</li>
             <li>IdeaAgent candidate generation and selected-idea handoff.</li>
+            <li>ScriptAgent LLM success and failure behavior.</li>
           </ul>
         </div>
       </details>
@@ -847,6 +969,7 @@ PYTHONPATH=. python3 -m unittest discover -s tests</code></pre>
   youtube_agents/agents/research_agent.py \
   youtube_agents/agents/strategy_agent.py \
   youtube_agents/agents/idea_agent.py \
+  youtube_agents/agents/script_agent.py \
   youtube_agents/sources/youtube_source.py</code></pre>
         </div>
       </details>
@@ -906,8 +1029,6 @@ PYTHONPATH=. python3 -m unittest discover -s tests</code></pre>
               <tr><th>Agent</th><th>Future Responsibility</th></tr>
             </thead>
             <tbody>
-              <tr><td><code>OutlineAgent</code></td><td>Build retention structure, sections, beats, and evidence placement.</td></tr>
-              <tr><td><code>ScriptAgent</code></td><td>Draft the voiceover script from the outline.</td></tr>
               <tr><td><code>CritiqueAgent</code></td><td>Score and critique the script for clarity, retention, claims, and pacing.</td></tr>
               <tr><td><code>PackageAgent</code></td><td>Save final project artifacts, docs, metadata, and packaging recommendations.</td></tr>
             </tbody>

@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.youtube-agents/schemas/script.schema.json",
+  "title": "ScriptAgent v1 output",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "agent",
+    "created_at",
+    "status",
+    "input",
+    "selected_idea_used",
+    "strategy_used",
+    "generation",
+    "script",
+    "claims_to_verify",
+    "source_evidence_used",
+    "revision_notes",
+    "handoff_contract"
+  ],
+  "properties": {
+    "schema_version": { "const": "script.v1" },
+    "agent": { "const": "ScriptAgent" },
+    "created_at": { "type": "string" },
+    "status": { "enum": ["complete", "failed"] },
+    "input": { "type": "object" },
+    "selected_idea_used": { "type": "object" },
+    "strategy_used": { "type": "object" },
+    "generation": { "type": "object" },
+    "script": {
+      "type": "object",
+      "properties": {
+        "working_title": { "type": "string" },
+        "target_duration_minutes": { "type": "number" },
+        "estimated_word_count": { "type": "integer" },
+        "hook": { "type": "string" },
+        "intro": { "type": "string" },
+        "body_sections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "heading": { "type": "string" },
+              "narration": { "type": "string" },
+              "evidence_used": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "claims_to_verify": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "cta": { "type": "string" },
+        "full_script": { "type": "string" },
+        "claims_used": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "claims_to_verify": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "editor_notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "claims_to_verify": { "type": "array" },
+    "source_evidence_used": { "type": "array" },
+    "revision_notes": { "type": "array" },
+    "handoff_contract": { "type": "object" }
+  }
+}

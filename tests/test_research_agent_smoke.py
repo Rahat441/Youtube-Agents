@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 from youtube_agents.agents.research_agent import ResearchAgent
 from youtube_agents.sources.youtube_source import YouTubeDataSource
@@ -71,7 +72,7 @@ class ResearchAgentSmokeTest(unittest.TestCase):
         self.assertTrue(any(item["query"] == "walnuts side effects" for item in result["query_plan"]))
 
     def test_content_type_filters_short_videos_for_scriptable(self):
-        source = YouTubeDataSource(api_key="fake-key")
+        source = self.youtube_source()
         videos = [
             {
                 "video_id": "short1",
@@ -106,7 +107,7 @@ class ResearchAgentSmokeTest(unittest.TestCase):
         self.assertEqual(relevance_filter["rejected_videos"], 1)
 
     def test_language_filter_rejects_non_english_titles(self):
-        source = YouTubeDataSource(api_key="fake-key")
+        source = self.youtube_source()
         videos = [
             {
                 "video_id": "english1",
@@ -141,7 +142,7 @@ class ResearchAgentSmokeTest(unittest.TestCase):
         self.assertEqual(relevance_filter["rejected_videos"], 1)
 
     def test_competitor_fit_preserves_off_context_outliers(self):
-        source = YouTubeDataSource(api_key="fake-key")
+        source = self.youtube_source()
         health_video = {
             "video_id": "health1",
             "title": "What Happens When You Eat Walnuts Every Day",
@@ -178,6 +179,10 @@ class ResearchAgentSmokeTest(unittest.TestCase):
 
         self.assertEqual(health_video["competitor_fit"]["bucket"], "strong_fit")
         self.assertEqual(off_context_video["competitor_fit"]["bucket"], "off_context_outlier")
+
+    def youtube_source(self):
+        with patch("youtube_agents.sources.youtube_source.load_dotenv"):
+            return YouTubeDataSource(api_key="fake-key")
 
 
 if __name__ == "__main__":

@@ -7,12 +7,11 @@ Local-first rebuild of the YouTube automation pipeline. This project will be bui
 1. ResearchAgent
 2. StrategyAgent
 3. IdeaAgent
-4. OutlineAgent
-5. ScriptAgent
-6. CritiqueAgent
-7. PackageAgent
+4. ScriptAgent
+5. CritiqueAgent
+6. PackageAgent
 
-ResearchAgent v1, StrategyAgent v1, and IdeaAgent v1 are implemented right now.
+ResearchAgent v1, StrategyAgent v1, IdeaAgent v1, and ScriptAgent v1 are implemented right now.
 
 ## Setup
 
@@ -197,7 +196,7 @@ StrategyAgent uses:
 
 StrategyAgent also reports confidence from the gap between the top lanes, sample size, breakout count, source errors, and whether live YouTube evidence was available. `key_evidence` lists the specific breakout videos, title patterns, and claim risks that influenced the recommendation.
 
-It does not decide the final title, outline, script, or thumbnail package. Those belong to later agents.
+It does not decide the final title, script, or thumbnail package. Those belong to later agents.
 
 ## IdeaAgent V1
 
@@ -271,4 +270,67 @@ Each idea includes:
 - `risk_notes`
 - `score`
 
-IdeaAgent does not create the outline or script. That belongs to OutlineAgent.
+IdeaAgent does not create the script. That belongs to ScriptAgent.
+
+## ScriptAgent V1
+
+Responsibility: read `research.json`, `strategy.json`, and `ideas.json`, then use an LLM to draft `script.json` for the selected idea.
+
+ScriptAgent is LLM-only. It does not have a template fallback. If the LLM fails or returns unusable JSON, it writes a failed `script.json` with the error recorded in `generation.errors`.
+
+Inputs:
+
+- `research.json`
+- `strategy.json`
+- `ideas.json`
+- `provider`
+- `model`
+- `target_duration_minutes`
+- `script_style`
+- `llm_timeout_seconds`
+
+Outputs:
+
+- `script.json`
+- `selected_idea_used`
+- `strategy_used`
+- `generation`
+- `script`
+- `claims_to_verify`
+- `source_evidence_used`
+- `revision_notes`
+- `handoff_contract`
+
+JSON schema:
+
+- `schemas/script.schema.json`
+
+Ollama generation:
+
+```bash
+python3 main.py script \
+  --research workspace/agent_runs/YYYYMMDD_HHMMSS_topic/research.json \
+  --strategy workspace/agent_runs/YYYYMMDD_HHMMSS_topic/strategy.json \
+  --ideas workspace/agent_runs/YYYYMMDD_HHMMSS_topic/ideas.json \
+  --provider ollama \
+  --model llama3.1 \
+  --target-duration-minutes 8 \
+  --llm-timeout-seconds 300
+```
+
+OpenAI generation:
+
+```bash
+python3 main.py script \
+  --research workspace/agent_runs/YYYYMMDD_HHMMSS_topic/research.json \
+  --strategy workspace/agent_runs/YYYYMMDD_HHMMSS_topic/strategy.json \
+  --ideas workspace/agent_runs/YYYYMMDD_HHMMSS_topic/ideas.json \
+  --provider openai \
+  --model gpt-4o-mini \
+  --target-duration-minutes 8 \
+  --llm-timeout-seconds 300
+```
+
+Use `--llm-timeout-seconds 0` to disable the request timeout. The timeout only stops a hanging request; it does not cap Ollama context size, output length, or model settings.
+
+ScriptAgent must mark claims that need verification instead of presenting them as settled facts. CritiqueAgent should later review the script for pacing, clarity, retention, and factual risk.

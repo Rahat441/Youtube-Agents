@@ -276,7 +276,7 @@
   <header>
     <div class="shell">
       <h1>YouTube Agents JSON Viewer</h1>
-      <p>Open <code>research.json</code>, <code>strategy.json</code>, and <code>ideas.json</code> files locally, then inspect the data in organized tables and summaries.</p>
+      <p>Open <code>research.json</code>, <code>strategy.json</code>, <code>ideas.json</code>, and <code>script.json</code> files locally, then inspect the data in organized tables and summaries.</p>
       <div class="toolbar">
         <div class="file-control">
           <label for="researchFile">Research JSON</label>
@@ -290,6 +290,10 @@
           <label for="ideasFile">Ideas JSON</label>
           <input id="ideasFile" type="file" accept=".json,application/json">
         </div>
+        <div class="file-control">
+          <label for="scriptFile">Script JSON</label>
+          <input id="scriptFile" type="file" accept=".json,application/json">
+        </div>
       </div>
     </div>
   </header>
@@ -301,6 +305,7 @@
       <button data-tab="videos">Videos</button>
       <button data-tab="strategy">Strategy</button>
       <button data-tab="ideas">Ideas</button>
+      <button data-tab="script">Script</button>
       <button data-tab="raw">Raw JSON</button>
     </div>
 
@@ -309,6 +314,7 @@
     <section class="section" id="videos"></section>
     <section class="section" id="strategy"></section>
     <section class="section" id="ideas"></section>
+    <section class="section" id="script"></section>
     <section class="section" id="raw"></section>
   </main>
 
@@ -316,9 +322,11 @@
     let researchData = null;
     let strategyData = null;
     let ideasData = null;
+    let scriptData = null;
     let researchName = "";
     let strategyName = "";
     let ideasName = "";
+    let scriptName = "";
 
     const sections = {
       overview: document.getElementById("overview"),
@@ -326,6 +334,7 @@
       videos: document.getElementById("videos"),
       strategy: document.getElementById("strategy"),
       ideas: document.getElementById("ideas"),
+      script: document.getElementById("script"),
       raw: document.getElementById("raw")
     };
 
@@ -362,6 +371,14 @@
       renderAll();
     });
 
+    document.getElementById("scriptFile").addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      scriptData = await readJsonFile(file);
+      scriptName = file.name;
+      renderAll();
+    });
+
     function readJsonFile(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -384,6 +401,7 @@
       renderVideos();
       renderStrategy();
       renderIdeas();
+      renderScript();
       renderRaw();
     }
 
@@ -403,6 +421,7 @@
           ${metric("Breakouts", formatNumber(market.breakout_count || researchData?.breakout_videos?.length || 0))}
           ${metric("Strategy Confidence", confidence.level ? `${escapeHtml(confidence.level)} (${confidence.score})` : "Not loaded")}
           ${metric("Selected Idea", escapeHtml(ideasData?.selected_idea?.idea_id || "Not loaded"))}
+          ${metric("Script Status", escapeHtml(scriptData?.status || "Not loaded"))}
         </div>
         <div class="split">
           <div class="list">
@@ -412,6 +431,7 @@
             <p><strong>Research file:</strong> ${escapeHtml(researchName || "Not loaded")}</p>
             <p><strong>Strategy file:</strong> ${escapeHtml(strategyName || "Not loaded")}</p>
             <p><strong>Ideas file:</strong> ${escapeHtml(ideasName || "Not loaded")}</p>
+            <p><strong>Script file:</strong> ${escapeHtml(scriptName || "Not loaded")}</p>
           </div>
           <div class="list">
             <h3>Recommendation</h3>
@@ -419,6 +439,7 @@
             <p><strong>Angle:</strong> ${escapeHtml(strategyData?.recommended_angle || "Not loaded")}</p>
             <p><strong>Positioning:</strong> ${escapeHtml(strategyData?.positioning || "Not loaded")}</p>
             <p><strong>Selected idea:</strong> ${escapeHtml(ideasData?.selected_idea?.working_title || "Not loaded")}</p>
+            <p><strong>Script title:</strong> ${escapeHtml(scriptData?.script?.working_title || "Not loaded")}</p>
           </div>
         </div>
       `;
@@ -543,6 +564,36 @@
       `;
     }
 
+    function renderScript() {
+      if (!scriptData) {
+        sections.script.innerHTML = notice("Load a script.json file to inspect the generated script.", "warn");
+        return;
+      }
+      const script = scriptData.script || {};
+      sections.script.innerHTML = `
+        <h2>Script Summary</h2>
+        <div class="metrics">
+          ${metric("Status", escapeHtml(scriptData.status || ""))}
+          ${metric("Provider", escapeHtml(scriptData.generation?.used_provider || scriptData.generation?.requested_provider || ""))}
+          ${metric("Target Minutes", formatNumber(script.target_duration_minutes || scriptData.input?.target_duration_minutes || 0))}
+          ${metric("Est. Words", formatNumber(script.estimated_word_count || 0))}
+        </div>
+        ${(scriptData.generation?.errors || []).length ? notice(`Generation errors: ${escapeHtml(scriptData.generation.errors.join("; "))}`, "warn") : ""}
+        <div class="list">
+          <h3>Working Title</h3>
+          <p><strong>${escapeHtml(script.working_title || "")}</strong></p>
+          <p><strong>Hook:</strong> ${escapeHtml(script.hook || "")}</p>
+          <p><strong>Intro:</strong> ${escapeHtml(script.intro || "")}</p>
+        </div>
+        <h3>Body Sections</h3>
+        ${scriptSections(script.body_sections || [])}
+        <h3>Claims To Verify</h3>
+        ${claimsTable(scriptData.claims_to_verify || [])}
+        <h3>Full Script</h3>
+        <pre><code>${escapeHtml(script.full_script || "No full script available.")}</code></pre>
+      `;
+    }
+
     function renderRaw() {
       sections.raw.innerHTML = `
         <h2>Raw JSON</h2>
@@ -558,7 +609,21 @@
           <summary>ideas.json</summary>
           <div class="details-body"><pre><code>${escapeHtml(ideasData ? JSON.stringify(ideasData, null, 2) : "Not loaded")}</code></pre></div>
         </details>
+        <details>
+          <summary>script.json</summary>
+          <div class="details-body"><pre><code>${escapeHtml(scriptData ? JSON.stringify(scriptData, null, 2) : "Not loaded")}</code></pre></div>
+        </details>
       `;
+    }
+
+    function scriptSections(sections) {
+      if (!sections.length) return notice("No script sections available.");
+      return table(["Heading", "Narration", "Evidence", "Claims To Verify"], sections.map(item => [
+        escapeHtml(item.heading || ""),
+        escapeHtml(item.narration || ""),
+        escapeHtml((item.evidence_used || []).join(" | ")),
+        escapeHtml((item.claims_to_verify || []).join(" | "))
+      ]));
     }
 
     function ideasTable(ideas) {
@@ -621,7 +686,10 @@
 
     function claimsTable(items) {
       if (!items.length) return notice("No claims flagged.");
-      return table(["Claim Area", "Reason"], items.map(item => [escapeHtml(item.claim_area || ""), escapeHtml(item.reason || "")]));
+      return table(["Claim", "Reason/Source"], items.map(item => [
+        escapeHtml(item.claim_area || item.claim || ""),
+        escapeHtml(item.reason || item.source || "")
+      ]));
     }
 
     function sourceErrorsTable(items) {

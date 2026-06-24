@@ -73,7 +73,7 @@ class IdeaAgentSmokeTest(unittest.TestCase):
         self.assertEqual(ideas["agent"], "IdeaAgent")
         self.assertEqual(len(ideas["ideas"]), 5)
         self.assertEqual(ideas["selected_idea"]["idea_id"], ideas["ideas"][0]["idea_id"])
-        self.assertEqual(ideas["handoff_contract"]["next_agent"], "OutlineAgent")
+        self.assertEqual(ideas["handoff_contract"]["next_agent"], "ScriptAgent")
         self.assertTrue(ideas["selected_idea"]["working_title"])
         self.assertIn("score", ideas["selected_idea"])
         self.assertNotIn("outline", ideas["selected_idea"])
